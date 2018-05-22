@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{316CCD27-C53F-42F2-AD5E-5CA897DD9AB8}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TransferControl</RootNamespace>
+    <AssemblyName>TransferControl</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="log4net">
+      <HintPath>..\..\..\..\Downloads\log4net-2.0.8-bin-newkey\log4net-2.0.8\bin\net\4.5\release\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Comm\ComPortClient.cs" />
+    <Compile Include="Comm\IConnection.cs" />
+    <Compile Include="Comm\IConnectionReport.cs" />
+    <Compile Include="Comm\SocketClient.cs" />
+    <Compile Include="Config\ConfigTool.cs" />
+    <Compile Include="Config\ConnectSettig.cs" />
+    <Compile Include="Controller\DeviceConfig.cs" />
+    <Compile Include="Controller\DeviceController.cs" />
+    <Compile Include="Controller\ICommandReport.cs" />
+    <Compile Include="Controller\IController.cs" />
+    <Compile Include="Engine\IEngineReport.cs" />
+    <Compile Include="Engine\RouteControl.cs" />
+    <Compile Include="Management\ControllerManagement.cs" />
+    <Compile Include="Management\ITransactionReport.cs" />
+    <Compile Include="Management\Job.cs" />
+    <Compile Include="Management\JobManagement.cs" />
+    <Compile Include="Management\Node.cs" />
+    <Compile Include="Management\NodeManagement.cs" />
+    <Compile Include="Management\NodeState.cs" />
+    <Compile Include="Management\Notify.cs" />
+    <Compile Include="Management\Path.cs" />
+    <Compile Include="Management\PathManagement.cs" />
+    <Compile Include="Management\RouteManagement.cs" />
+    <Compile Include="Management\Transaction.cs" />
+    <Compile Include="Management\TransferRequest.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\SANWA Function\SANWA\SANWA\SANWA.csproj">
+      <Project>{4eed2ed4-a72e-4f24-8d80-ef2f0b24fcf1}</Project>
+      <Name>SANWA</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
