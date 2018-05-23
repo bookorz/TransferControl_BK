@@ -6,8 +6,6 @@ C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\log4
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\Newtonsoft.Json.dll
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\SANWA.dll
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\SANWA.pdb
-C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\log4net.pdb
-C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\log4net.xml
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\Newtonsoft.Json.xml
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\obj\Debug\TransferControl.csproj.CopyComplete
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\obj\Debug\TransferControl.dll
