@@ -49,3 +49,4 @@ E:\TransferControl\TransferControl\obj\Debug\TransferControl.csproj.CoreCompileI
 E:\TransferControl\TransferControl\obj\Debug\TransferControl.csproj.CopyComplete
 E:\TransferControl\TransferControl\obj\Debug\TransferControl.dll
 E:\TransferControl\TransferControl\obj\Debug\TransferControl.pdb
+C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\nModbusPC.dll
