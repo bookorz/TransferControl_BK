@@ -313,7 +313,28 @@ namespace TransferControl.Management
 
                         }
                         break;
-                }
+                    case "OCR":
+                        switch (txn.Method)
+                        {
+                            case Transaction.Command.OCRType.GetOnline:
+                                txn.CommandEncodeStr = Encoder.OCR.GetOnline();
+                                txn.CommandType = "";
+                                break;
+                            case Transaction.Command.OCRType.Online:
+                                txn.CommandEncodeStr = Encoder.OCR.SetOnline(EncoderOCR.OnlineStatus.Online);
+                                txn.CommandType = "";
+                                break;
+                            case Transaction.Command.OCRType.Offline:
+                                txn.CommandEncodeStr = Encoder.OCR.SetOnline(EncoderOCR.OnlineStatus.Offline);
+                                txn.CommandType = "";
+                                break;
+                            case Transaction.Command.OCRType.Read:
+                                txn.CommandEncodeStr = Encoder.OCR.Read();
+                                txn.CommandType = "CMD";
+                                break;
+                        }
+                        break;
+                 }
 
 
 

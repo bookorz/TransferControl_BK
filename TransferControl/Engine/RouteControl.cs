@@ -879,113 +879,118 @@ namespace TransferControl.Engine
             var watch = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-
-                logger.Debug("On_Command_Finished:" + Txn.Method + ":" + Txn.Method + " Wafer:" + Txn.TargetJobs[0].Job_Id);
+                Job TargetJob;
+                logger.Debug("On_Command_Finished:" + Txn.Method + ":" + Txn.Method);
                 Node.InterLock = false;
-                if (Node.Type.Equals("Robot"))
+
+
+                switch (Node.Type)
                 {
-
-                    UpdateJobLocation(Node, Txn);
-                    UpdateNodeStatus(Node, Txn);
-                    if (_Mode.Equals("Auto"))
-                    {
-                        switch (Node.Phase)
+                    case "Robot":
+                        UpdateJobLocation(Node, Txn);
+                        UpdateNodeStatus(Node, Txn);
+                        if (_Mode.Equals("Auto"))
                         {
-                            case "1":
-                                RobotFetchMode(Node, Txn.ScriptName);
-                                break;
-                            case "2":
-                                Job TargetJob = Txn.TargetJobs[0];
+                            switch (Node.Phase)
+                            {
+                                case "1":
+                                    RobotFetchMode(Node, Txn.ScriptName);
+                                    break;
+                                case "2":
+                                    TargetJob = Txn.TargetJobs[0];
 
-                                foreach (Path eachPath in PathManagement.GetPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
-                                {
-                                    if (!eachPath.ChangeToStatus.Equals(""))
+                                    foreach (Path eachPath in PathManagement.GetPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
                                     {
-                                        TargetJob.CurrentState = eachPath.ChangeToStatus;
+                                        if (!eachPath.ChangeToStatus.Equals(""))
+                                        {
+                                            TargetJob.CurrentState = eachPath.ChangeToStatus;
+                                        }
+                                        foreach (Path.Action eachAction in eachPath.TodoList)
+                                        {
+                                            TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node);
+                                        }
+                                        break;
                                     }
-                                    foreach (Path.Action eachAction in eachPath.TodoList)
-                                    {
-                                        TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node);
+
+                                    if ((Txn.Method.Equals(Transaction.Command.RobotType.Get) || Txn.Method.Equals(Transaction.Command.RobotType.GetAfterWait) || Txn.Method.Equals(Transaction.Command.RobotType.Put) || Txn.Method.Equals(Transaction.Command.RobotType.PutBack)) && ((Node.AllDone && Node.JobList.Count == 2) || (Node.AllDone && Node.WaitForCarryCount == 0)) && Node.Phase == "2")
+                                    {//拿好拿滿就去放片吧
+                                        logger.Debug("拿好拿滿就去放片吧");
+                                        Node.Phase = "3";
+                                        RobotPutMode(Node, Txn.ScriptName);
                                     }
                                     break;
-                                }
-
-                                if ((Txn.Method.Equals(Transaction.Command.RobotType.Get) || Txn.Method.Equals(Transaction.Command.RobotType.GetAfterWait) || Txn.Method.Equals(Transaction.Command.RobotType.Put) || Txn.Method.Equals(Transaction.Command.RobotType.PutBack)) && ((Node.AllDone && Node.JobList.Count == 2) || (Node.AllDone && Node.WaitForCarryCount == 0)) && Node.Phase == "2")
-                                {//拿好拿滿就去放片吧
-                                    logger.Debug("拿好拿滿就去放片吧");
-                                    Node.Phase = "3";
+                                case "3":
                                     RobotPutMode(Node, Txn.ScriptName);
-                                }
-                                break;
-                            case "3":
-                                RobotPutMode(Node, Txn.ScriptName);
-                                break;
+                                    break;
+                            }
                         }
-                    }
 
-                }
-                else
-                {
-                    Job TargetJob = Txn.TargetJobs[0];
-                    UpdateNodeStatus(Node, Txn);
-                    if (_Mode.Equals("Auto"))
-                    {
-                        foreach (Path eachPath in PathManagement.GetPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
+                        break;
+                    case "Aligner":
+                        TargetJob = Txn.TargetJobs[0];
+                        UpdateNodeStatus(Node, Txn);
+                        if (_Mode.Equals("Auto"))
                         {
-                            if (!eachPath.Expression.Equals(""))
+                            foreach (Path eachPath in PathManagement.GetPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
                             {
-                                switch (eachPath.Expression)
+                                if (!eachPath.Expression.Equals(""))
                                 {
-                                    case "[Job.AlignerFlag] == true":
-                                        if (!TargetJob.AlignerFlag)
-                                        {
-                                            continue;
-                                        }
-                                        break;
-                                    case "[Job.AlignerFlag] == false":
-                                        if (TargetJob.AlignerFlag)
-                                        {
-                                            continue;
-                                        }
-                                        break;
-                                    case "[Job.OCRFlag] == true":
-                                        if (!TargetJob.OCRFlag)
-                                        {
-                                            continue;
-                                        }
-                                        break;
-                                    case "[Job.OCRFlag] == false":
-                                        if (TargetJob.OCRFlag)
-                                        {
-                                            continue;
-                                        }
-                                        break;
-                                    case "[Job.AlignerFinished] == true":
-                                        if (!TargetJob.AlignerFinished)
-                                        {
-                                            continue;
-                                        }
-                                        break;
-                                    case "[Job.AlignerFinished] == false":
-                                        if (TargetJob.AlignerFinished)
-                                        {
-                                            continue;
-                                        }
-                                        break;
+                                    switch (eachPath.Expression)
+                                    {
+                                        case "[Job.AlignerFlag] == true":
+                                            if (!TargetJob.AlignerFlag)
+                                            {
+                                                continue;
+                                            }
+                                            break;
+                                        case "[Job.AlignerFlag] == false":
+                                            if (TargetJob.AlignerFlag)
+                                            {
+                                                continue;
+                                            }
+                                            break;
+                                        case "[Job.OCRFlag] == true":
+                                            if (!TargetJob.OCRFlag)
+                                            {
+                                                continue;
+                                            }
+                                            break;
+                                        case "[Job.OCRFlag] == false":
+                                            if (TargetJob.OCRFlag)
+                                            {
+                                                continue;
+                                            }
+                                            break;
+                                        case "[Job.AlignerFinished] == true":
+                                            if (!TargetJob.AlignerFinished)
+                                            {
+                                                continue;
+                                            }
+                                            break;
+                                        case "[Job.AlignerFinished] == false":
+                                            if (TargetJob.AlignerFinished)
+                                            {
+                                                continue;
+                                            }
+                                            break;
+                                    }
                                 }
-                            }
 
-                            if (!eachPath.ChangeToStatus.Equals(""))
-                            {
-                                TargetJob.CurrentState = eachPath.ChangeToStatus;
+                                if (!eachPath.ChangeToStatus.Equals(""))
+                                {
+                                    TargetJob.CurrentState = eachPath.ChangeToStatus;
+                                }
+                                foreach (Path.Action eachAction in eachPath.TodoList)
+                                {
+                                    TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node);
+                                }
+                                break;
                             }
-                            foreach (Path.Action eachAction in eachPath.TodoList)
-                            {
-                                TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node);
-                            }
-                            break;
                         }
-                    }
+                        break;
+                    case "OCR":
+
+                        break;
                 }
             }
             catch (Exception e)

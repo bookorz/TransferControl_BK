@@ -73,10 +73,20 @@ namespace TransferControl.Controller
 
             bool result = false;
             // lock (TransactionList)
-            ReturnMessage msg = _Decoder.GetMessage(Txn.CommandEncodeStr)[0];
-            Txn.Type = msg.Command;
-            Txn.CommandType = msg.CommandType;
-
+            if (!Txn.NodeType.Equals("OCR"))
+            {
+                List<ReturnMessage> msgList = _Decoder.GetMessage(Txn.CommandEncodeStr);
+                if (msgList.Count != 0)
+                {
+                    Txn.Type = msgList[0].Command;
+                    Txn.CommandType = msgList[0].CommandType;
+                }
+            }
+            else
+            {
+                Txn.Type = "";
+                //Txn.CommandType = "";
+            }
             if (TransactionList.TryAdd(Txn.AdrNo + Txn.Type, Txn))
             {
 
@@ -147,7 +157,7 @@ namespace TransferControl.Controller
                                             else
                                             {
                                                 Txn.SetTimeOutMonitor(false);
-                                                Txn.SetTimeOut(15000);
+                                                Txn.SetTimeOut(30000);
                                                 Txn.SetTimeOutMonitor(true);
                                                 TransactionList.TryAdd(ReturnMsg.NodeAdr + ReturnMsg.Command, Txn);
                                             }
@@ -176,13 +186,14 @@ namespace TransferControl.Controller
                                 }
                                 else
                                 {
-                  if (ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Information))
-                  {
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(conn.Send), ReturnMsg.FinCommand);
-                    logger.Debug(_Config.DeviceName + "Send:" + ReturnMsg.FinCommand);
-                  }
-                  else { 
-                    logger.Debug(_Config.DeviceName + "(On_Connection_Message Txn is not found. msg:" + Msg);
+                                    if (ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Information))
+                                    {
+                                        ThreadPool.QueueUserWorkItem(new WaitCallback(conn.Send), ReturnMsg.FinCommand);
+                                        logger.Debug(_Config.DeviceName + "Send:" + ReturnMsg.FinCommand);
+                                    }
+                                    else
+                                    {
+                                        logger.Debug(_Config.DeviceName + "(On_Connection_Message Txn is not found. msg:" + Msg);
                                         return;
                                     }
                                 }
@@ -213,7 +224,7 @@ namespace TransferControl.Controller
                                 case ReturnMessage.ReturnType.Error:
 
                                     _ReportTarget.On_Command_Error(Node, Txn, ReturnMsg);
-                                    
+
                                     break;
 
                             }

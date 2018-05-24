@@ -115,7 +115,10 @@ namespace TransferControl.Management
             //OCR
             public class OCRType
             {
-                public const string OCR = "OCR";
+                public const string Read = "Read";
+                public const string Online = "Online";
+                public const string Offline = "Offline";
+                public const string GetOnline = "GetOnline";
             }
         }
 
@@ -142,7 +145,7 @@ namespace TransferControl.Management
 
             timeOutTimer.Enabled = false;
 
-            timeOutTimer.Interval = 1000;
+            timeOutTimer.Interval = 10000;
 
             timeOutTimer.Elapsed += new System.Timers.ElapsedEventHandler(TimeOutMonitor);
 
