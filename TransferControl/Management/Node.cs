@@ -239,6 +239,9 @@ namespace TransferControl.Management
                             case Transaction.Command.RobotType.WaitBeforeGet:
                                 txn.CommandEncodeStr = Encoder.Robot.GetWaferToStandBy(AdrNo, "", txn.Arm, txn.Point, "0", txn.Slot);
                                 break;
+                            case Transaction.Command.RobotType.WaitBeforePut:
+                                txn.CommandEncodeStr = Encoder.Robot.PutWaferToStandBy(AdrNo, "", txn.Arm, txn.Point, txn.Slot);
+                                break;
                             case Transaction.Command.RobotType.GetAfterWait:
                                 txn.CommandEncodeStr = Encoder.Robot.GetWaferToContinue(AdrNo, "", txn.Arm, txn.Point, "0", txn.Slot);
                                 break;

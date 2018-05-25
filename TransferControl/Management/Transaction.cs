@@ -80,6 +80,7 @@ namespace TransferControl.Management
                 public const string Get = "Get";
                 public const string DoubleGet = "DoubleGet";
                 public const string WaitBeforeGet = "WaitBeforeGet";
+                public const string WaitBeforePut = "WaitBeforePut";
                 public const string GetAfterWait = "GetAfterWait";
                 public const string Put = "Put";
                 public const string PutWithoutBack = "PutWithoutBack";
