@@ -260,6 +260,9 @@ namespace TransferControl.Management
                             case Transaction.Command.RobotType.RobotHome:
                                 txn.CommandEncodeStr = Encoder.Robot.Home(AdrNo, "");
                                 break;
+                            case Transaction.Command.RobotType.RobotOrginSearch:
+                                txn.CommandEncodeStr = Encoder.Robot.OrginSearch(AdrNo, "");
+                                break;
                             case Transaction.Command.RobotType.WaferRelease:
                                 txn.CommandEncodeStr = Encoder.Aligner.WaferReleaseHold(AdrNo, "", txn.Arm);
                                 break;
