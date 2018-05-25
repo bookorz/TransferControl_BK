@@ -2,3 +2,6 @@
 /TransferControl.csprojAssemblyReference.cache
 /TransferControl.dll
 /TransferControl.pdb
+*.cache
+*.dll
+*.pdb

@@ -22,12 +22,16 @@ namespace TransferControl.Engine
         string _Mode = "";
         DateTime StartTime = new DateTime();
         IEngineReport _EngReport;
+        public static SystemConfig SysConfig;
 
         public int SpinWaitTimeOut = 99999000;
 
         public RouteControl(IEngineReport ReportTarget)
         {
             _EngReport = ReportTarget;
+            ConfigTool<SystemConfig> SysCfg = new ConfigTool<SystemConfig>();
+            SysConfig = SysCfg.ReadFile("config/SystemConfig.json");
+
             ConfigTool<DeviceConfig> DeviceCfg = new ConfigTool<DeviceConfig>();
             foreach (DeviceConfig eachDevice in DeviceCfg.ReadFileByList("config/Controller/Controllers.json"))
             {

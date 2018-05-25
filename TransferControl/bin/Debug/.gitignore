@@ -3,3 +3,5 @@
 /TransferControl.dll
 /TransferControl.pdb
 /nModbusPC.dll
+*.dll
+*.pdb
