@@ -48,6 +48,23 @@ namespace TransferControl.Management
             return result;
         }
 
+        public static List<Node> GetLoadPortList(string Mode)
+        {
+            List<Node> result = new List<Node>();
+
+            var findPort = from port in NodeList.Values.ToList()
+                           where port.Type.Equals("LoadPort") && port.Mode.Equals(Mode)
+                           select port;
+
+            if (findPort.Count() != 0)
+            {
+                result = findPort.ToList();
+                result.Sort((x, y) => { return x.Name.CompareTo(y.Name); });
+            }
+
+            return result;
+        }
+
         public static List<Node> GetEnableRobotList()
         {
             List<Node> result = new List<Node>();

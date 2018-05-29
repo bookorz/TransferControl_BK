@@ -44,7 +44,7 @@ namespace TransferControl.Engine
 
             foreach (Node eachNode in NodeCfg.ReadFileByList("config/Node/Nodes.json"))
             {
-
+                eachNode.Initial();
                 NodeManagement.Add(eachNode.Name, eachNode);
 
             }
@@ -70,7 +70,7 @@ namespace TransferControl.Engine
 
         }
 
-        public void Auto(string ScriptName)
+        public void Auto(object ScriptName)
         {
             lock (this)
             {
@@ -88,7 +88,8 @@ namespace TransferControl.Engine
             foreach (Node robot in NodeManagement.GetEnableRobotList())
             {
                 robot.Initial();
-                RobotFetchMode(robot, ScriptName);
+
+                RobotFetchMode(robot, ScriptName.ToString());
             }
 
 

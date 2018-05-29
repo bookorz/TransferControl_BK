@@ -8,6 +8,7 @@ namespace TransferControl.Management
 {
     public class Job
     {
+        public string Slot { get; set; }
         public string Job_Id { get; set; }
         public bool ProcessFlag { get; set; }
         public int Piority { get; set; }
@@ -16,19 +17,22 @@ namespace TransferControl.Management
         public bool AlignerFinished { get; set; }
         public bool OCRFinished { get; set; }
         public string Position { get; set; }
-        public string Slot { get; set; }
         public string FromPort { get; set; }
         public string Destination { get; set; }
+        public string DisplayDestination { get; set; }
         public string DestinationSlot { get; set; }
         public string LastNode { get; set; }
         public string CurrentState { get; set; }
         public string WaitToDo { get; set; }
         public string FetchRobot { get; set; }
-    public string ProcessNode { get; set; }
+        public string ProcessNode { get; set; }
 
         public Job()
         {
             WaitToDo = "";
+            Destination = "";
+            DestinationSlot = "";
+            ProcessFlag = true;
         }
 
         public class State

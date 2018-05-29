@@ -26,18 +26,19 @@ namespace TransferControl.Management
         public string LockByNode { get; set; }
         public string CurrentPosition { get; set; }
         public string CurrentWaitNode { get; set; }
-       public bool Enable { get; set; }
+        public bool Enable { get; set; }
         public int WaitForCarryCount { get; set; }
         public bool Available { get; set; }
         public bool PutAvailable { get; set; }
         public bool GetAvailable { get; set; }
         public bool GetMutex { get; set; }
         public bool InterLock { get; set; }
-        public string state { get; set; }
+        public string State { get; set; }
+        public string Mode { get; set; }
         public bool Reserve { get; set; }
         public bool PutOut { get; set; }
         public string UnLockByJob { get; set; }
-        public string PutOutArm { get; set; }       
+        public string PutOutArm { get; set; }
         public bool AllDone { get; set; }
         public bool InitialComplete { get; set; }
         public bool Fetchable { get; set; }
@@ -45,7 +46,7 @@ namespace TransferControl.Management
 
         public ConcurrentDictionary<string, Job> JobList { get; set; }
         public List<Route> RouteTable { get; set; }
-        
+
 
 
         public class Route
@@ -53,35 +54,7 @@ namespace TransferControl.Management
             public string NodeName { get; set; }
             public string NodeType { get; set; }
             public string Point { get; set; }
-        }
-
-        public Node()
-        {
-            JobList = new ConcurrentDictionary<string, Job>();
-            Phase = "1";
-            CurrentLoadPort = "";
-            LockByNode = "";
-            CurrentWaitNode = "";
-            CurrentPosition = "";
-            PutOutArm = "";
-            UnLockByJob = "";
-            state = "";
-            PutOut = false;
-            PutAvailable = true;
-            GetAvailable = true;
-            GetMutex = true;
-            InterLock = false;
-            Reserve = false;
-            AllDone = false;
-            Available = true;
-            Enable = true;
-      if (Type == "LoadPort")
-      {
-        Available = false;
-      }
-            Fetchable = false;
-            LoadTime = new DateTime();
-        }
+        }      
 
         public void Initial()
         {
@@ -91,9 +64,24 @@ namespace TransferControl.Management
             LockByNode = "";
             CurrentWaitNode = "";
             CurrentPosition = "";
-            WaitForCarryCount = 0;
-            GetAvailable = false;
+            PutOutArm = "";
+            UnLockByJob = "";
+            State = "";
             PutOut = false;
+            PutAvailable = true;
+            GetAvailable = true;
+            GetMutex = true;
+            InterLock = false;
+            Reserve = false;
+            AllDone = false;
+            Available = true;
+            Enable = true;
+            if (Type == "LoadPort")
+            {
+                Available = false;
+            }
+            Fetchable = false;
+            LoadTime = new DateTime();
 
         }
 
@@ -199,7 +187,7 @@ namespace TransferControl.Management
                                 break;
                             case Transaction.Command.LoadPortType.ReadVersion:
                                 txn.CommandEncodeStr = Encoder.LoadPort.Version();
-                                break;         
+                                break;
                             case Transaction.Command.LoadPortType.MapperWaitPosition:
                                 txn.CommandEncodeStr = Encoder.LoadPort.MapperWaitPosition(EncoderLoadPort.CommandType.Normal);
                                 break;
@@ -290,7 +278,7 @@ namespace TransferControl.Management
                                 txn.CommandEncodeStr = Encoder.Aligner.Home(AdrNo, "");
                                 break;
                             case Transaction.Command.AlignerType.Align:
-                                txn.CommandEncodeStr = Encoder.Aligner.Align(AdrNo, "", txn.Angle);
+                                txn.CommandEncodeStr = Encoder.Aligner.Align(AdrNo, "", txn.Value);
                                 break;
                             case Transaction.Command.AlignerType.Retract:
                                 txn.CommandEncodeStr = Encoder.Aligner.Retract(AdrNo, "");
@@ -340,13 +328,13 @@ namespace TransferControl.Management
                                 break;
                         }
                         break;
-                 }
+                }
 
 
 
                 if (ControllerManagement.Get(Controller).DoWork(txn))
                 {
-                    
+
                     result = true;
                 }
                 else
@@ -392,7 +380,20 @@ namespace TransferControl.Management
             return result;
         }
 
-
+        public bool RemoveJob(string Slot)
+        {
+            bool result = false;
+            //lock (JobList)
+            //{
+            if (JobList.ContainsKey(Slot))
+            {
+                Job tmp;
+                JobList.TryRemove(Slot, out tmp);
+                result = true;
+            }
+            //}
+            return result;
+        }
 
 
 
