@@ -83,17 +83,76 @@ namespace TransferControl.Engine
                     _Mode = "Auto";
                 }
             }
-
-            StartTime = DateTime.Now;
-            foreach (Node robot in NodeManagement.GetEnableRobotList())
+            while (!_Mode.Equals("Auto"))
             {
-                robot.Initial();
 
-                RobotFetchMode(robot, ScriptName.ToString());
+                StartTime = DateTime.Now;
+                foreach (Node robot in NodeManagement.GetEnableRobotList())
+                {
+                    robot.Initial();
+
+                    List<Node> PortList = new List<Node>();
+                    foreach (Node.Route eachNode in robot.RouteTable)
+                    {
+                        if (eachNode.NodeType.Equals("Port"))
+                        {
+                            PortList.Add(NodeManagement.Get(eachNode.NodeName));
+
+                        }
+                    }
+                    var findPort = from port in PortList
+                                   where port.Available == true && port.Fetchable == true
+                                   select port;
+
+                    if (findPort.Count() == 0)
+                    {//當沒有Port正在作業時，指定Load的時間最早的Port可以開始取片
+
+                        findPort = from port in PortList
+                                   where port.Available
+                                   select port;
+                        if (findPort.Count() == 0)
+                        {
+
+
+                            if (!_Mode.Equals("Auto"))
+                            {
+                                return;
+                            }
+                            findPort = from port in PortList
+                                       where port.Available
+                                       select port;
+                        }
+                        if (findPort.Count() != 0)
+                        {
+                            List<Node> tmp = findPort.ToList();
+
+                            tmp.Sort((x, y) => { return x.LoadTime.CompareTo(y.LoadTime); });
+
+                            PortList[0].Fetchable = true;
+                            logger.Debug(robot.Name + ":指定 " + PortList[0].Name + " 開始取片");
+                        }
+                        else
+                        {
+                            logger.Debug("RobotFetchMode " + robot.Name + " 找不到可以搬的Port");
+                            robot.Phase = "2";
+                            robot.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
+                            robot.Release = true;
+                            continue;
+                        }
+                    }
+
+                    RobotFetchMode(robot, ScriptName.ToString());
+                }
+                logger.Debug("等待搬運週期完成");
+                SpinWait.SpinUntil(() => (from rbt in NodeManagement.GetEnableRobotList()
+                                          where rbt.Release == false
+                                          select rbt).Count() == 0 || !_Mode.Equals("Auto"), SpinWaitTimeOut); //等待搬運週期完成
+                logger.Debug("搬運週期完成，下個周期開始");
             }
-
-
+            logger.Debug("結束Auto模式");
         }
+
+        
 
         public string GetMode()
         {
@@ -112,6 +171,7 @@ namespace TransferControl.Engine
             RobotNode.GetAvailable = false;
             RobotNode.PutAvailable = false;
             RobotNode.AllDone = false;
+            RobotNode.Release = false;
             if (RobotNode.JobList.Count == 0)//雙臂皆空
             {
 
@@ -140,9 +200,7 @@ namespace TransferControl.Engine
                     if (findPort.Count() == 0)
                     {
 
-                        SpinWait.SpinUntil(() => (from port in PortList
-                                                  where port.Available
-                                                  select port).Count() != 0 || !_Mode.Equals("Auto"), SpinWaitTimeOut);
+                                                
                         if (!_Mode.Equals("Auto"))
                         {
                             return;
@@ -151,13 +209,23 @@ namespace TransferControl.Engine
                                    where port.Available
                                    select port;
                     }
+                    if (findPort.Count() != 0)
+                    {
+                        List<Node> tmp = findPort.ToList();
 
-                    List<Node> tmp = findPort.ToList();
+                        tmp.Sort((x, y) => { return x.LoadTime.CompareTo(y.LoadTime); });
 
-                    tmp.Sort((x, y) => { return x.LoadTime.CompareTo(y.LoadTime); });
-
-                    PortList[0].Fetchable = true;
-                    logger.Debug(RobotNode.Name + ":指定 " + PortList[0].Name + " 開始取片");
+                        PortList[0].Fetchable = true;
+                        logger.Debug(RobotNode.Name + ":指定 " + PortList[0].Name + " 開始取片");
+                    }
+                    else
+                    {
+                        logger.Debug("RobotFetchMode " + RobotNode.Name + " 找不到可以搬的Port");
+                        RobotNode.Phase = "2";
+                        RobotNode.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
+                        RobotNode.Release = true;
+                        return;
+                    }
                 }
 
 
@@ -185,6 +253,7 @@ namespace TransferControl.Engine
                             logger.Debug("RobotFetchMode " + RobotNode.Name + " 找不到可以搬的Wafer");
                             RobotNode.Phase = "2";
                             RobotNode.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
+                            RobotNode.Release = true;
                             TimeSpan diff = DateTime.Now - StartTime;
                             logger.Info("Process Time: " + diff.TotalSeconds);
                             _EngReport.On_Port_Finished(PortNode.Name);
