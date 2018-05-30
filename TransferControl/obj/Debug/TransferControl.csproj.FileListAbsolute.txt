@@ -50,3 +50,15 @@ E:\TransferControl\TransferControl\obj\Debug\TransferControl.csproj.CopyComplete
 E:\TransferControl\TransferControl\obj\Debug\TransferControl.dll
 E:\TransferControl\TransferControl\obj\Debug\TransferControl.pdb
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\nModbusPC.dll
+D:\SyncSourceCode\TransferControl\TransferControl\bin\Debug\TransferControl.dll
+D:\SyncSourceCode\TransferControl\TransferControl\bin\Debug\TransferControl.pdb
+D:\SyncSourceCode\TransferControl\TransferControl\bin\Debug\Newtonsoft.Json.dll
+D:\SyncSourceCode\TransferControl\TransferControl\bin\Debug\SANWA.dll
+D:\SyncSourceCode\TransferControl\TransferControl\bin\Debug\nModbusPC.dll
+D:\SyncSourceCode\TransferControl\TransferControl\bin\Debug\SANWA.pdb
+D:\SyncSourceCode\TransferControl\TransferControl\bin\Debug\Newtonsoft.Json.xml
+D:\SyncSourceCode\TransferControl\TransferControl\obj\Debug\TransferControl.csprojAssemblyReference.cache
+D:\SyncSourceCode\TransferControl\TransferControl\obj\Debug\TransferControl.csproj.CoreCompileInputs.cache
+D:\SyncSourceCode\TransferControl\TransferControl\obj\Debug\TransferControl.csproj.CopyComplete
+D:\SyncSourceCode\TransferControl\TransferControl\obj\Debug\TransferControl.dll
+D:\SyncSourceCode\TransferControl\TransferControl\obj\Debug\TransferControl.pdb
