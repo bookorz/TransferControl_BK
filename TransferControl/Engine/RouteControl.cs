@@ -83,10 +83,34 @@ namespace TransferControl.Engine
                     _Mode = "Auto";
                 }
             }
-            while (!_Mode.Equals("Auto"))
+            while (_Mode.Equals("Auto"))
             {
 
                 StartTime = DateTime.Now;
+                while (true)
+                {
+
+
+                    logger.Debug("等待可用Foup中");
+                    SpinWait.SpinUntil(() => (from LD in NodeManagement.GetLoadPortList()
+                                              where LD.Available == true && LD.Mode.Equals("LD")
+                                              select LD).Count() != 0 || !_Mode.Equals("Auto"), SpinWaitTimeOut);
+                    if ((from LD in NodeManagement.GetLoadPortList()
+                         where LD.Available == true
+                         select LD).Count() != 0 || !_Mode.Equals("Auto"))
+                    {
+                        if (!_Mode.Equals("Auto"))
+                        {
+                            logger.Debug("結束Auto模式");
+                            return;
+                        }
+                        else
+                        {
+                            logger.Debug("可用Foup出現");
+                        }
+                        break;
+                    }
+                }
                 foreach (Node robot in NodeManagement.GetEnableRobotList())
                 {
                     robot.Initial();
@@ -128,8 +152,8 @@ namespace TransferControl.Engine
 
                             tmp.Sort((x, y) => { return x.LoadTime.CompareTo(y.LoadTime); });
 
-                            PortList[0].Fetchable = true;
-                            logger.Debug(robot.Name + ":指定 " + PortList[0].Name + " 開始取片");
+                            tmp[0].Fetchable = true;
+                            logger.Debug(robot.Name + ":指定 " + tmp[0].Name + " 開始取片");
                         }
                         else
                         {
@@ -144,15 +168,25 @@ namespace TransferControl.Engine
                     RobotFetchMode(robot, ScriptName.ToString());
                 }
                 logger.Debug("等待搬運週期完成");
-                SpinWait.SpinUntil(() => (from rbt in NodeManagement.GetEnableRobotList()
-                                          where rbt.Release == false
-                                          select rbt).Count() == 0 || !_Mode.Equals("Auto"), SpinWaitTimeOut); //等待搬運週期完成
+                SpinWait.SpinUntil(() => CheckCycle() || !_Mode.Equals("Auto"), SpinWaitTimeOut); //等待搬運週期完成
                 logger.Debug("搬運週期完成，下個周期開始");
             }
             logger.Debug("結束Auto模式");
         }
 
-        
+        private bool CheckCycle()
+        {
+
+
+            bool a = (from rbt in NodeManagement.GetEnableRobotList()
+                      where rbt.Phase.Equals("1")
+                      select rbt).Count() == 0;
+            bool b = (from jb in JobManagement.GetJobList()
+                      where jb.Position.Equals("Robot01") || jb.Position.Equals("Robot02") || jb.Position.Equals("Aligner01") || jb.Position.Equals("Aligner02")
+                      select jb).Count() == 0;
+
+            return a && b;
+        }
 
         public string GetMode()
         {
@@ -192,44 +226,14 @@ namespace TransferControl.Engine
                                select port;
 
                 if (findPort.Count() == 0)
-                {//當沒有Port正在作業時，指定Load的時間最早的Port可以開始取片
-
-                    findPort = from port in PortList
-                               where port.Available
-                               select port;
-                    if (findPort.Count() == 0)
-                    {
-
-                                                
-                        if (!_Mode.Equals("Auto"))
-                        {
-                            return;
-                        }
-                        findPort = from port in PortList
-                                   where port.Available
-                                   select port;
-                    }
-                    if (findPort.Count() != 0)
-                    {
-                        List<Node> tmp = findPort.ToList();
-
-                        tmp.Sort((x, y) => { return x.LoadTime.CompareTo(y.LoadTime); });
-
-                        PortList[0].Fetchable = true;
-                        logger.Debug(RobotNode.Name + ":指定 " + PortList[0].Name + " 開始取片");
-                    }
-                    else
-                    {
-                        logger.Debug("RobotFetchMode " + RobotNode.Name + " 找不到可以搬的Port");
-                        RobotNode.Phase = "2";
-                        RobotNode.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
-                        RobotNode.Release = true;
-                        return;
-                    }
+                {
+                    logger.Debug("RobotFetchMode " + RobotNode.Name + " 找不到可以搬的Port");
+                    RobotNode.Phase = "2";
+                    RobotNode.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
+                    RobotNode.Release = true;
+                    return;
                 }
-
-
-                foreach (Node PortNode in PortList)
+                foreach (Node PortNode in findPort)
                 {
 
                     int FirstSlot = -1;
@@ -250,6 +254,7 @@ namespace TransferControl.Engine
                         if (findJob.Count() == 0)
                         {
                             PortNode.Fetchable = false;
+                            PortNode.Available = false;
                             logger.Debug("RobotFetchMode " + RobotNode.Name + " 找不到可以搬的Wafer");
                             RobotNode.Phase = "2";
                             RobotNode.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
@@ -261,6 +266,7 @@ namespace TransferControl.Engine
                         }
                         else
                         {
+                            JobsSortBySlot = findJob.ToList();
                             JobsSortBySlot.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
                             foreach (Job eachJob in JobsSortBySlot)
                             {
@@ -283,7 +289,7 @@ namespace TransferControl.Engine
                                         if (diff == 1)
                                         {
                                             ConsecutiveSlot = true;
-
+                                            TargetJobs.Add(eachJob);
 
                                         }
                                         else
@@ -291,7 +297,7 @@ namespace TransferControl.Engine
 
                                             ConsecutiveSlot = false;
                                         }
-                                        TargetJobs.Add(eachJob);
+
                                         eachJob.FetchRobot = RobotNode.Name;
                                         break;//找到第二片
                                     }
@@ -359,6 +365,10 @@ namespace TransferControl.Engine
                 {
                     JobsSortBySlot = PortNode.JobList.Values.ToList();
                 }
+                var findJob = from Job in JobsSortBySlot
+                              where Job.ProcessFlag == false
+                              select Job;
+                JobsSortBySlot = findJob.ToList();
                 JobsSortBySlot.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
                 foreach (Job eachJob in JobsSortBySlot)
                 {
@@ -441,8 +451,8 @@ namespace TransferControl.Engine
                     }
                     else
                     {
-                        //each.ProcessNode = NodeManagement.GetAnotherAligner(lastProcessNode).Name;
-                        each.ProcessNode = NodeManagement.GetReservAligner(each.FromPort).Name;
+                        each.ProcessNode = NodeManagement.GetAnotherAligner(lastProcessNode).Name;
+                        //each.ProcessNode = NodeManagement.GetReservAligner(each.FromPort).Name;
                     }
                     List<Job> TargetJobs = new List<Job>();
                     TargetJobs.Add(each);
@@ -547,6 +557,9 @@ namespace TransferControl.Engine
                         txn.Arm = Node.PutOutArm;
                         break;
                     case Transaction.Command.RobotType.GetWait:
+                        txn.Arm = "1";
+                        txn.Slot = "1";
+                        break;
                     case Transaction.Command.RobotType.WaitBeforeGet:
                     case Transaction.Command.RobotType.Get:
                     case Transaction.Command.RobotType.GetAfterWait:
@@ -986,7 +999,7 @@ namespace TransferControl.Engine
                                         break;
                                     }
 
-                                    if ((Txn.Method.Equals(Transaction.Command.RobotType.Get) || Txn.Method.Equals(Transaction.Command.RobotType.GetAfterWait) || Txn.Method.Equals(Transaction.Command.RobotType.Put) || Txn.Method.Equals(Transaction.Command.RobotType.PutBack)) && ((Node.AllDone && Node.JobList.Count == 2) || (Node.AllDone && Node.WaitForCarryCount == 0)) && Node.Phase == "2")
+                                    if ((Txn.Method.Equals(Transaction.Command.RobotType.Get) || Txn.Method.Equals(Transaction.Command.RobotType.GetAfterWait) || Txn.Method.Equals(Transaction.Command.RobotType.Put) || Txn.Method.Equals(Transaction.Command.RobotType.PutBack)) && ((Node.AllDone && Node.JobList.Count == 2) || (Node.AllDone && Node.WaitForCarryCount == 0)) && Node.Phase == "2" && Node.JobList.Count != 0)
                                     {//拿好拿滿就去放片吧
                                         logger.Debug("拿好拿滿就去放片吧");
                                         Node.Phase = "3";
@@ -1001,10 +1014,11 @@ namespace TransferControl.Engine
 
                         break;
                     case "Aligner":
-                        TargetJob = Txn.TargetJobs[0];
+
                         UpdateNodeStatus(Node, Txn);
                         if (_Mode.Equals("Auto"))
                         {
+                            TargetJob = Txn.TargetJobs[0];
                             foreach (Path eachPath in PathManagement.GetPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
                             {
                                 if (!eachPath.Expression.Equals(""))

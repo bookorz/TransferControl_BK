@@ -44,7 +44,7 @@ namespace TransferControl.Management
         public bool Fetchable { get; set; }
         public bool Release { get; set; }
         public DateTime LoadTime { get; set; }
-
+        public ConcurrentDictionary<string, Job> ReserveList { get; set; }
         public ConcurrentDictionary<string, Job> JobList { get; set; }
         public List<Route> RouteTable { get; set; }
 
@@ -60,6 +60,7 @@ namespace TransferControl.Management
         public void Initial()
         {
             JobList = new ConcurrentDictionary<string, Job>();
+            ReserveList = new ConcurrentDictionary<string, Job>();
             Phase = "1";
             CurrentLoadPort = "";
             LockByNode = "";
@@ -397,7 +398,45 @@ namespace TransferControl.Management
             return result;
         }
 
+        public Job GetReserve(string Slot)
+        {
+            Job result = null;
 
+            //lock (JobList)
+            //{
+            ReserveList.TryGetValue(Slot, out result);
+            //}
+
+            return result;
+        }
+        public bool AddReserve(string Slot, Job Job)
+        {
+            bool result = false;
+            //lock (JobList)
+            //{
+            if (!ReserveList.ContainsKey(Slot))
+            {
+                ReserveList.TryAdd(Slot, Job);
+                result = true;
+            }
+            //}
+            return result;
+        }
+
+        public bool RemoveReserve(string Slot)
+        {
+            bool result = false;
+            //lock (JobList)
+            //{
+            if (ReserveList.ContainsKey(Slot))
+            {
+                Job tmp;
+                ReserveList.TryRemove(Slot, out tmp);
+                result = true;
+            }
+            //}
+            return result;
+        }
 
     }
 }
