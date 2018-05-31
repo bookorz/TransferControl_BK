@@ -62,3 +62,15 @@ D:\SyncSourceCode\TransferControl\TransferControl\obj\Debug\TransferControl.cspr
 D:\SyncSourceCode\TransferControl\TransferControl\obj\Debug\TransferControl.csproj.CopyComplete
 D:\SyncSourceCode\TransferControl\TransferControl\obj\Debug\TransferControl.dll
 D:\SyncSourceCode\TransferControl\TransferControl\obj\Debug\TransferControl.pdb
+C:\軟體專案開發\team\TransferControl\TransferControl\bin\Debug\TransferControl.dll
+C:\軟體專案開發\team\TransferControl\TransferControl\bin\Debug\TransferControl.pdb
+C:\軟體專案開發\team\TransferControl\TransferControl\bin\Debug\Newtonsoft.Json.dll
+C:\軟體專案開發\team\TransferControl\TransferControl\bin\Debug\SANWA.dll
+C:\軟體專案開發\team\TransferControl\TransferControl\bin\Debug\nModbusPC.dll
+C:\軟體專案開發\team\TransferControl\TransferControl\bin\Debug\SANWA.pdb
+C:\軟體專案開發\team\TransferControl\TransferControl\bin\Debug\Newtonsoft.Json.xml
+C:\軟體專案開發\team\TransferControl\TransferControl\obj\Debug\TransferControl.csprojResolveAssemblyReference.cache
+C:\軟體專案開發\team\TransferControl\TransferControl\obj\Debug\TransferControl.csproj.CoreCompileInputs.cache
+C:\軟體專案開發\team\TransferControl\TransferControl\obj\Debug\TransferControl.csproj.CopyComplete
+C:\軟體專案開發\team\TransferControl\TransferControl\obj\Debug\TransferControl.dll
+C:\軟體專案開發\team\TransferControl\TransferControl\obj\Debug\TransferControl.pdb

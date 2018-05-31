@@ -292,6 +292,9 @@ namespace TransferControl.Management
                             case Transaction.Command.AlignerType.GetRIO:
                                 txn.CommandEncodeStr = Encoder.Aligner.StatusIO(AdrNo, "", txn.Value);
                                 break;
+                            case Transaction.Command.AlignerType.GetError:
+                                txn.CommandEncodeStr = Encoder.Aligner.ErrorMessage(AdrNo, "", txn.Value);
+                                break;
                             case Transaction.Command.AlignerType.AlignerHome:
                                 txn.CommandEncodeStr = Encoder.Aligner.Home(AdrNo, "");
                                 break;

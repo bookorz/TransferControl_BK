@@ -117,6 +117,7 @@ namespace TransferControl.Management
                 public const string Reset = "Reset";
                 public const string GetSpeed = "GetSpeed";
                 public const string GetRIO = "GetRIO";
+                public const string GetError = "GetError";
             }
             //OCR
             public class OCRType
