@@ -26,6 +26,7 @@ namespace TransferControl.Management
         public string WaitToDo { get; set; }
         public string FetchRobot { get; set; }
         public string ProcessNode { get; set; }
+        public bool MapFlag { get; set; }
 
         public Job()
         {
@@ -33,6 +34,7 @@ namespace TransferControl.Management
             Destination = "";
             DestinationSlot = "";
             ProcessFlag = true;
+            MapFlag = false;
         }
 
         public class State

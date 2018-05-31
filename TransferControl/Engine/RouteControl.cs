@@ -188,6 +188,15 @@ namespace TransferControl.Engine
             return a && b;
         }
 
+        private bool CheckPresent(Node Node)
+        {
+            bool a = (from jb in Node.JobList.Values
+                      where jb.MapFlag == true
+                      select jb).Count() != 0;
+ 
+            return a;
+        }
+
         public string GetMode()
         {
             string result = "";
@@ -647,10 +656,10 @@ namespace TransferControl.Engine
                                 SpinWait.SpinUntil(() => !Node.PutOut, SpinWaitTimeOut); //等待Robot手臂收回
                                 logger.Debug(Node.Name + " 偵測到手臂收回，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
                             }
-                            if (Target.JobList.Count != 0 && (Action.Method.Equals(Transaction.Command.RobotType.Put) || Action.Method.Equals(Transaction.Command.RobotType.PutWithoutBack)))
+                            if (CheckPresent(Target) && (Action.Method.Equals(Transaction.Command.RobotType.Put) || Action.Method.Equals(Transaction.Command.RobotType.PutWithoutBack)))
                             {
                                 logger.Debug(Node.Name + " 偵測到目標在席存在中，等待，需求命令:" + Action.EqpType + ":" + Action.Method);
-                                SpinWait.SpinUntil(() => Target.JobList.Count == 0, SpinWaitTimeOut);
+                                SpinWait.SpinUntil(() => !CheckPresent(Target), SpinWaitTimeOut);
                                 logger.Debug(Node.Name + " 偵測到目標在席已被取走，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
                             }
 
@@ -660,7 +669,7 @@ namespace TransferControl.Engine
                             lock (Node)
                             {
 
-                                if (Target.JobList.Count != 0 && (Action.Method.Equals(Transaction.Command.RobotType.Put) || Action.Method.Equals(Transaction.Command.RobotType.PutWithoutBack)))
+                                if (CheckPresent(Target) && (Action.Method.Equals(Transaction.Command.RobotType.Put) || Action.Method.Equals(Transaction.Command.RobotType.PutWithoutBack)))
                                 {
                                     logger.Debug(Node.Name + " 偵測到目標在席存在中，等待，需求命令:" + Action.EqpType + ":" + Action.Method);
                                     continue;
@@ -1218,14 +1227,16 @@ namespace TransferControl.Engine
                                 Node TargetNode5 = NodeManagement.Get(Txn.TargetJobs[i].Position);
                                 Job tmp;
                                 TargetNode5.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
+                                tmp = new Job();
+                                tmp.Job_Id = "No wafer";
+                                tmp.Slot = Txn.TargetJobs[i].Slot;
+                                TargetNode5.JobList.TryAdd(Txn.TargetJobs[i].Slot, tmp);
                                 Txn.TargetJobs[i].LastNode = Txn.TargetJobs[i].Position;
                                 Txn.TargetJobs[i].Slot = (i + 1).ToString();
                                 Txn.TargetJobs[i].Position = Node.Name;
                                 Node.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
-
+                                _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
                             }
-
-
 
                             break;
                         case Transaction.Command.RobotType.DoublePut:
@@ -1249,8 +1260,9 @@ namespace TransferControl.Engine
 
 
                                 Txn.TargetJobs[i].Position = Txn.Position;
+                                TargetNode6.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
                                 TargetNode6.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
-
+                                _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
                             }
 
                             break;
@@ -1263,6 +1275,10 @@ namespace TransferControl.Engine
                                 Node TargetNode4 = NodeManagement.Get(Txn.TargetJobs[i].Position);
                                 Job tmp;
                                 TargetNode4.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
+                                tmp = new Job();
+                                tmp.Job_Id = "No wafer";
+                                tmp.Slot = Txn.TargetJobs[i].Slot;
+                                TargetNode4.JobList.TryAdd(Txn.TargetJobs[i].Slot, tmp);
                                 Txn.TargetJobs[i].LastNode = Txn.TargetJobs[i].Position;
                                 Txn.TargetJobs[i].Position = Node.Name;
                                 switch (i)
@@ -1279,7 +1295,7 @@ namespace TransferControl.Engine
 
                                 Node.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
 
-
+                                _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
                                 // logger.Debug(JsonConvert.SerializeObject(Txn.TargetJobs[i]));
                             }
 
@@ -1312,8 +1328,9 @@ namespace TransferControl.Engine
                                         break;
                                 }
                                 Node TargetNode3 = NodeManagement.Get(Txn.TargetJobs[i].Position);
+                                TargetNode3.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
                                 TargetNode3.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
-
+                                _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
                                 // logger.Debug(JsonConvert.SerializeObject(Txn.TargetJobs[i]));
                             }
 

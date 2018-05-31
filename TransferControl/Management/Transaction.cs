@@ -29,7 +29,7 @@ namespace TransferControl.Management
         public string Type { get; set; }
         public int Piority { get; set; }
         public string ScriptName { get; set; }
-
+        public string FormName { get; set; }
 
         //逾時
         private System.Timers.Timer timeOutTimer = new System.Timers.Timer();
@@ -143,6 +143,7 @@ namespace TransferControl.Management
             CommandEncodeStr = "";
             ScriptName = "";
             Type = "";
+            FormName = "";
             TargetJobs = new List<Job>();
 
             timeOutTimer.Enabled = false;
