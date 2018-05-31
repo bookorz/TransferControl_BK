@@ -60,6 +60,8 @@
     <Compile Include="Controller\IController.cs" />
     <Compile Include="Engine\IEngineReport.cs" />
     <Compile Include="Engine\RouteControl.cs" />
+    <Compile Include="Management\AlarmInfo.cs" />
+    <Compile Include="Management\AlarmManagement.cs" />
     <Compile Include="Management\ControllerManagement.cs" />
     <Compile Include="Management\ITransactionReport.cs" />
     <Compile Include="Management\Job.cs" />
