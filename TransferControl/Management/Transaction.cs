@@ -98,6 +98,8 @@ namespace TransferControl.Management
                 public const string RobotSpeed = "RobotSpeed";
                 public const string Reset = "Reset";
                 public const string GetStatus = "GetStatus";
+                public const string GetSpeed = "GetSpeed";
+                public const string GetRIO = "GetRIO";
             }
             //Aligner
             public class AlignerType
@@ -113,6 +115,8 @@ namespace TransferControl.Management
                 public const string AlignerHome = "AlignerHome";
                 public const string GetStatus = "GetStatus";
                 public const string Reset = "Reset";
+                public const string GetSpeed = "GetSpeed";
+                public const string GetRIO = "GetRIO";
             }
             //OCR
             public class OCRType
