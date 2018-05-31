@@ -29,7 +29,7 @@ namespace TransferControl.Management
         public string Type { get; set; }
         public int Piority { get; set; }
         public string ScriptName { get; set; }
-
+        public string FormName { get; set; }
 
         //逾時
         private System.Timers.Timer timeOutTimer = new System.Timers.Timer();
@@ -98,6 +98,8 @@ namespace TransferControl.Management
                 public const string RobotSpeed = "RobotSpeed";
                 public const string Reset = "Reset";
                 public const string GetStatus = "GetStatus";
+                public const string GetSpeed = "GetSpeed";
+                public const string GetRIO = "GetRIO";
             }
             //Aligner
             public class AlignerType
@@ -113,6 +115,8 @@ namespace TransferControl.Management
                 public const string AlignerHome = "AlignerHome";
                 public const string GetStatus = "GetStatus";
                 public const string Reset = "Reset";
+                public const string GetSpeed = "GetSpeed";
+                public const string GetRIO = "GetRIO";
             }
             //OCR
             public class OCRType
@@ -143,6 +147,7 @@ namespace TransferControl.Management
             CommandEncodeStr = "";
             ScriptName = "";
             Type = "";
+            FormName = "";
             TargetJobs = new List<Job>();
 
             timeOutTimer.Enabled = false;

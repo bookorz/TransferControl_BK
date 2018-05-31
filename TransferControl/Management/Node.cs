@@ -214,6 +214,12 @@ namespace TransferControl.Management
                             case Transaction.Command.RobotType.GetStatus:
                                 txn.CommandEncodeStr = Encoder.Robot.Status(AdrNo, "");
                                 break;
+                            case Transaction.Command.RobotType.GetSpeed:
+                                txn.CommandEncodeStr = Encoder.Robot.Speed(AdrNo, "");
+                                break;
+                            case Transaction.Command.RobotType.GetRIO:
+                                txn.CommandEncodeStr = Encoder.Robot.StatusIO(AdrNo, "", txn.Value);
+                                break;
                             case Transaction.Command.RobotType.Get:
                                 txn.CommandEncodeStr = Encoder.Robot.GetWafer(AdrNo, "", txn.Arm, txn.Point, "0", txn.Slot);
                                 break;
@@ -276,6 +282,15 @@ namespace TransferControl.Management
                     case "Aligner":
                         switch (txn.Method)
                         {
+                            case Transaction.Command.AlignerType.GetStatus:
+                                txn.CommandEncodeStr = Encoder.Aligner.Status(AdrNo, "");
+                                break;
+                            case Transaction.Command.AlignerType.GetSpeed:
+                                txn.CommandEncodeStr = Encoder.Aligner.Speed(AdrNo, "");
+                                break;
+                            case Transaction.Command.AlignerType.GetRIO:
+                                txn.CommandEncodeStr = Encoder.Aligner.StatusIO(AdrNo, "", txn.Value);
+                                break;
                             case Transaction.Command.AlignerType.AlignerHome:
                                 txn.CommandEncodeStr = Encoder.Aligner.Home(AdrNo, "");
                                 break;
