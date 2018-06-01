@@ -23,6 +23,8 @@ namespace TransferControl.Controller
         DeviceConfig _Config;
         SANWA.Utility.Decoder _Decoder;
         ConcurrentDictionary<string, Transaction> TransactionList = new ConcurrentDictionary<string, Transaction>();
+        public string Name { get; set; }
+        public string Status { get; set; }
 
         public DeviceController(DeviceConfig Config, ICommandReport ReportTarget)
         {
@@ -40,6 +42,7 @@ namespace TransferControl.Controller
 
             }
             _Decoder = new SANWA.Utility.Decoder(Config.DeviceType);
+            this.Name = _Config.DeviceName;
 
         }
         public void Close()
@@ -251,16 +254,19 @@ namespace TransferControl.Controller
         public void On_Connection_Connected(string Msg)
         {
             _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Connected");
+            this.Status = "Connected";
         }
 
         public void On_Connection_Connecting(string Msg)
         {
             _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Connecting");
+            this.Status = "Connecting";
         }
 
         public void On_Connection_Disconnected(string Msg)
         {
             _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Disconnected");
+            this.Status = "Disconnected";
         }
 
         public void On_Connection_Error(string Msg)

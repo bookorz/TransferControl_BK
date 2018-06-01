@@ -223,6 +223,9 @@ namespace TransferControl.Management
                             case Transaction.Command.RobotType.GetRIO:
                                 txn.CommandEncodeStr = Encoder.Robot.StatusIO(AdrNo, "", txn.Value);
                                 break;
+                            case Transaction.Command.RobotType.GetError:
+                                txn.CommandEncodeStr = Encoder.Robot.ErrorMessage(AdrNo, "", txn.Value);
+                                break;
                             case Transaction.Command.RobotType.Get:
                                 txn.CommandEncodeStr = Encoder.Robot.GetWafer(AdrNo, "", txn.Arm, txn.Point, "0", txn.Slot);
                                 break;
