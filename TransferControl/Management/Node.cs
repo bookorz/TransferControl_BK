@@ -43,6 +43,7 @@ namespace TransferControl.Management
         public bool InitialComplete { get; set; }
         public bool Fetchable { get; set; }
         public bool Release { get; set; }
+        public bool HasAlarm { get; set; }
         public DateTime LoadTime { get; set; }
         public ConcurrentDictionary<string, Job> ReserveList { get; set; }
         public ConcurrentDictionary<string, Job> JobList { get; set; }
@@ -79,6 +80,7 @@ namespace TransferControl.Management
             Available = true;
             Enable = true;
             Release = true;
+            HasAlarm = false;
             if (Type == "LoadPort")
             {
                 Available = false;
