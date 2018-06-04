@@ -223,6 +223,15 @@ namespace TransferControl.Management
                             case Transaction.Command.RobotType.GetRIO:
                                 txn.CommandEncodeStr = Encoder.Robot.StatusIO(AdrNo, "", txn.Value);
                                 break;
+                            case Transaction.Command.RobotType.Stop:
+                                txn.CommandEncodeStr = Encoder.Robot.DeviceStop(AdrNo, "", txn.Value);
+                                break;
+                            case Transaction.Command.RobotType.Pause:
+                                txn.CommandEncodeStr = Encoder.Robot.DevicePause(AdrNo, "");
+                                break;
+                            case Transaction.Command.RobotType.Continue:
+                                txn.CommandEncodeStr = Encoder.Robot.DeviceContinue(AdrNo, "");
+                                break;
                             case Transaction.Command.RobotType.GetError:
                                 txn.CommandEncodeStr = Encoder.Robot.ErrorMessage(AdrNo, "", txn.Value);
                                 break;
