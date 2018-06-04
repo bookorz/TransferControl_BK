@@ -101,6 +101,9 @@ namespace TransferControl.Management
                 public const string GetSpeed = "GetSpeed";
                 public const string GetRIO = "GetRIO";
                 public const string GetError = "GetError";
+                public const string Stop = "Stop";
+                public const string Pause = "Pause";
+                public const string Continue = "Continue";
             }
             //Aligner
             public class AlignerType
