@@ -223,6 +223,9 @@ namespace TransferControl.Management
                             case Transaction.Command.RobotType.GetRIO:
                                 txn.CommandEncodeStr = Encoder.Robot.StatusIO(AdrNo, "", txn.Value);
                                 break;
+                            case Transaction.Command.RobotType.GetSV:
+                                txn.CommandEncodeStr = Encoder.Robot.SolenoidValve(AdrNo, "", txn.Value);
+                                break;
                             case Transaction.Command.RobotType.Stop:
                                 txn.CommandEncodeStr = Encoder.Robot.DeviceStop(AdrNo, "", txn.Value);
                                 break;
@@ -231,6 +234,9 @@ namespace TransferControl.Management
                                 break;
                             case Transaction.Command.RobotType.Continue:
                                 txn.CommandEncodeStr = Encoder.Robot.DeviceContinue(AdrNo, "");
+                                break;
+                            case Transaction.Command.RobotType.GetMode:
+                                txn.CommandEncodeStr = Encoder.Robot.GetMode(AdrNo, "");
                                 break;
                             case Transaction.Command.RobotType.GetError:
                                 txn.CommandEncodeStr = Encoder.Robot.ErrorMessage(AdrNo, "", txn.Value);
@@ -275,10 +281,10 @@ namespace TransferControl.Management
                                 txn.CommandEncodeStr = Encoder.Robot.OrginSearch(AdrNo, "");
                                 break;
                             case Transaction.Command.RobotType.WaferRelease:
-                                txn.CommandEncodeStr = Encoder.Aligner.WaferReleaseHold(AdrNo, "", txn.Arm);
+                                txn.CommandEncodeStr = Encoder.Robot.WaferReleaseHold(AdrNo, "", txn.Arm);
                                 break;
                             case Transaction.Command.RobotType.WaferHold:
-                                txn.CommandEncodeStr = Encoder.Aligner.WaferHold(AdrNo, "");
+                                txn.CommandEncodeStr = Encoder.Robot.WaferHold(AdrNo, "", txn.Arm);
                                 break;
                             case Transaction.Command.RobotType.RobotServo:
                                 txn.CommandEncodeStr = Encoder.Robot.ServoOn(AdrNo, "", txn.Arm);
@@ -306,8 +312,14 @@ namespace TransferControl.Management
                             case Transaction.Command.AlignerType.GetRIO:
                                 txn.CommandEncodeStr = Encoder.Aligner.StatusIO(AdrNo, "", txn.Value);
                                 break;
+                            case Transaction.Command.AlignerType.GetSV:
+                                txn.CommandEncodeStr = Encoder.Aligner.SolenoidValve(AdrNo, "", txn.Value);
+                                break;
                             case Transaction.Command.AlignerType.GetError:
                                 txn.CommandEncodeStr = Encoder.Aligner.ErrorMessage(AdrNo, "", txn.Value);
+                                break;
+                            case Transaction.Command.AlignerType.GetMode:
+                                txn.CommandEncodeStr = Encoder.Aligner.GetMode(AdrNo, ""); 
                                 break;
                             case Transaction.Command.AlignerType.AlignerHome:
                                 txn.CommandEncodeStr = Encoder.Aligner.Home(AdrNo, "");

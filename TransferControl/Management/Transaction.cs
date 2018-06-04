@@ -104,6 +104,9 @@ namespace TransferControl.Management
                 public const string Stop = "Stop";
                 public const string Pause = "Pause";
                 public const string Continue = "Continue";
+                public const string GetMode = "GetMode";
+                public const string GetSV = "GetSV";
+
             }
             //Aligner
             public class AlignerType
@@ -122,6 +125,8 @@ namespace TransferControl.Management
                 public const string GetSpeed = "GetSpeed";
                 public const string GetRIO = "GetRIO";
                 public const string GetError = "GetError";
+                public const string GetMode = "GetMode";
+                public const string GetSV = "GetSV";
             }
             //OCR
             public class OCRType
