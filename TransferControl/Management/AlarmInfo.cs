@@ -10,6 +10,7 @@ namespace TransferControl.Management
     {
         public string NodeName { get; set; }
         public string SystemAlarmCode { get; set; }
+        public string AlarmType { get; set; }
         public string AlarmCode { get; set; }
         public string Desc { get; set; }
         public string EngDesc { get; set; }
