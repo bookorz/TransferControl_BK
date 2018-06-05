@@ -15,6 +15,7 @@ namespace TransferControl.Management
         public string Slot { get; set; }
         public string Position { get; set; }
         public string Value { get; set; }
+        public string Index { get; set; }
         public string Flag { get; set; }
     }
 }

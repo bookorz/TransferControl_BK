@@ -103,6 +103,7 @@ namespace TransferControl.Management
                 txn.Position = StartCmd.Position;
                 txn.Slot = StartCmd.Slot;
                 txn.Value = StartCmd.Value;
+                txn.ScriptIndex = StartCmd.Index;
                 List<Job> dummyJob = new List<Job>();
                 Job dummy = new Job();
                 dummy.Job_Id = "dummy";

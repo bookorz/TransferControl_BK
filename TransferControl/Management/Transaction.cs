@@ -28,6 +28,7 @@ namespace TransferControl.Management
         public string Type { get; set; }
         public int Piority { get; set; }
         public string ScriptName { get; set; }
+        public string ScriptIndex { get; set; }
         public bool LastOneScript { get; set; }
         public string FormName { get; set; }
 

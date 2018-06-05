@@ -946,6 +946,10 @@ namespace TransferControl.Engine
                         {
                             foreach (CommandScript cmd in CommandScriptManagement.GetExcuteNext(Txn.ScriptName, Txn.Method))
                             {
+                                if (Convert.ToInt16(cmd.Index) - Convert.ToInt16(Txn.ScriptIndex) != 1)
+                                {
+                                    continue;
+                                }
                                 Transaction txn = new Transaction();
                                 txn.Method = cmd.Method;
                                 txn.FormName = Txn.FormName;
@@ -954,6 +958,7 @@ namespace TransferControl.Engine
                                 txn.Slot = cmd.Slot;
                                 txn.Value = cmd.Value;
                                 txn.ScriptName = Txn.ScriptName;
+                                txn.ScriptIndex = cmd.Index;
                                 txn.TargetJobs = Txn.TargetJobs;
                                 logger.Debug("Excute Script:" + Txn.ScriptName + " Method:" + txn.Method);
                                 if (cmd.Flag.Equals("End"))
@@ -1032,6 +1037,10 @@ namespace TransferControl.Engine
                         {
                             foreach (CommandScript cmd in CommandScriptManagement.GetFinishNext(Txn.ScriptName, Txn.Method))
                             {
+                                if (Convert.ToInt16(cmd.Index) - Convert.ToInt16(Txn.ScriptIndex) != 1)
+                                {
+                                    continue;
+                                }
                                 Transaction txn = new Transaction();
                                 txn.Method = cmd.Method;
                                 txn.FormName = Txn.FormName;
@@ -1040,6 +1049,7 @@ namespace TransferControl.Engine
                                 txn.Slot = cmd.Slot;
                                 txn.Value = cmd.Value;
                                 txn.ScriptName = Txn.ScriptName;
+                                txn.ScriptIndex = cmd.Index;
                                 txn.TargetJobs = Txn.TargetJobs;
                                 if (cmd.Flag.Equals("End"))
                                 {
