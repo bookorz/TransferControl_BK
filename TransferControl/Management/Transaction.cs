@@ -125,6 +125,9 @@ namespace TransferControl.Management
                 public const string Reset = "Reset";
                 public const string GetSpeed = "GetSpeed";
                 public const string GetRIO = "GetRIO";
+                public const string Stop = "Stop";
+                public const string Pause = "Pause";
+                public const string Continue = "Continue";
                 public const string GetError = "GetError";
                 public const string GetMode = "GetMode";
                 public const string GetSV = "GetSV";

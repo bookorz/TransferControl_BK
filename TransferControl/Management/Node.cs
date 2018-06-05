@@ -336,6 +336,15 @@ namespace TransferControl.Management
                             case Transaction.Command.AlignerType.GetRIO:
                                 txn.CommandEncodeStr = Encoder.Aligner.StatusIO(AdrNo, "", txn.Value);
                                 break;
+                            case Transaction.Command.AlignerType.Stop:
+                                txn.CommandEncodeStr = Encoder.Aligner.DeviceStop(AdrNo, "", txn.Value);
+                                break;
+                            case Transaction.Command.AlignerType.Pause:
+                                txn.CommandEncodeStr = Encoder.Aligner.DevicePause(AdrNo, "");
+                                break;
+                            case Transaction.Command.AlignerType.Continue:
+                                txn.CommandEncodeStr = Encoder.Aligner.DeviceContinue(AdrNo, "");
+                                break;
                             case Transaction.Command.AlignerType.GetSV:
                                 txn.CommandEncodeStr = Encoder.Aligner.SolenoidValve(AdrNo, "", txn.Value);
                                 break;
