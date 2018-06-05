@@ -90,6 +90,29 @@ namespace TransferControl.Management
 
         }
 
+        public void ExcuteScript(string ScriptName,string FormName)
+        {
+            CommandScript StartCmd = CommandScriptManagement.GetStart(ScriptName);
+            if (StartCmd != null)
+            {
+                Transaction txn = new Transaction();
+                txn.Method = StartCmd.Method;
+                txn.FormName = FormName;
+                txn.ScriptName = ScriptName;
+                txn.Arm = StartCmd.Arm;
+                txn.Position = StartCmd.Position;
+                txn.Slot = StartCmd.Slot;
+                txn.Value = StartCmd.Value;
+                List<Job> dummyJob = new List<Job>();
+                Job dummy = new Job();
+                dummy.Job_Id = "dummy";
+                dummyJob.Add(dummy);
+                txn.TargetJobs = dummyJob;
+                logger.Debug("Excute Script:"+ ScriptName + " Method:"+ txn.Method);
+                SendCommand(txn);
+            }
+        }
+
         public bool SendCommand(Transaction txn)
         {
             //var watch = System.Diagnostics.Stopwatch.StartNew();
