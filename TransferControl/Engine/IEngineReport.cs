@@ -20,5 +20,6 @@ namespace TransferControl.Engine
         void On_Controller_State_Changed(string Device_ID, string Status);
         void On_Port_Finished(string PortName);
         void On_Job_Location_Changed(Job Job);
+        void On_Script_Finished(Node Node, string ScriptName,string FormName);
     }
 }

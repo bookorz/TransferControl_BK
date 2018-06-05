@@ -49,6 +49,8 @@ namespace TransferControl.Engine
 
             }
 
+            PathManagement.LoadConfig();
+            CommandScriptManagement.LoadConfig();
         }
 
         public void ConnectAll()
@@ -193,7 +195,7 @@ namespace TransferControl.Engine
             bool a = (from jb in Node.JobList.Values
                       where jb.MapFlag == true
                       select jb).Count() != 0;
- 
+
             return a;
         }
 
@@ -926,6 +928,43 @@ namespace TransferControl.Engine
             try
             {
                 logger.Debug("On_Command_Excuted");
+                Job TargetJob = null;
+                if (Txn.TargetJobs.Count != 0)
+                {
+                    TargetJob = Txn.TargetJobs[0];
+
+                    if (TargetJob.Job_Id.Equals("dummy") && !Txn.ScriptName.Equals(""))
+                    {
+                        if (Txn.LastOneScript)
+                        {
+                            if (!Txn.CommandType.Equals("CMD") && !Txn.CommandType.Equals("MOV"))
+                            {
+                                _EngReport.On_Script_Finished(Node, Txn.ScriptName, Txn.FormName);
+                            }
+                        }
+                        else
+                        {
+                            foreach (CommandScript cmd in CommandScriptManagement.GetExcuteNext(Txn.ScriptName, Txn.Method))
+                            {
+                                Transaction txn = new Transaction();
+                                txn.Method = cmd.Method;
+                                txn.FormName = Txn.FormName;
+                                txn.Arm = cmd.Arm;
+                                txn.Position = cmd.Position;
+                                txn.Slot = cmd.Slot;
+                                txn.Value = cmd.Value;
+                                txn.ScriptName = Txn.ScriptName;
+                                txn.TargetJobs = Txn.TargetJobs;
+                                logger.Debug("Excute Script:" + Txn.ScriptName + " Method:" + txn.Method);
+                                if (cmd.Flag.Equals("End"))
+                                {
+                                    txn.LastOneScript = true;
+                                }
+                                Node.SendCommand(txn);
+                            }
+                        }
+                    }
+                }
                 if (Node.Type.Equals("Robot"))
                 {
                     Node.CurrentPosition = Txn.Position;
@@ -938,7 +977,7 @@ namespace TransferControl.Engine
 
                             break;
                         case "2":
-                            Job TargetJob = Txn.TargetJobs[0];
+
 
                             foreach (Path eachPath in PathManagement.GetPath(Txn.ScriptName, Txn.Method))
                             {
@@ -975,11 +1014,43 @@ namespace TransferControl.Engine
             var watch = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                Job TargetJob;
-                logger.Debug("On_Command_Finished:" + Txn.Method + ":" + Txn.Method);
-                Node.InterLock = false;
+                Job TargetJob = null;
+                if (Txn.TargetJobs.Count != 0)
+                {
+                    TargetJob = Txn.TargetJobs[0];
+                    logger.Debug("On_Command_Finished:" + Txn.Method + ":" + Txn.Method);
+                    Node.InterLock = false;
+                    if (TargetJob.Job_Id.Equals("dummy") && !Txn.ScriptName.Equals(""))
+                    {
+                        if (Txn.LastOneScript)
+                        {
 
+                            _EngReport.On_Script_Finished(Node, Txn.ScriptName, Txn.FormName);
 
+                        }
+                        else
+                        {
+                            foreach (CommandScript cmd in CommandScriptManagement.GetFinishNext(Txn.ScriptName, Txn.Method))
+                            {
+                                Transaction txn = new Transaction();
+                                txn.Method = cmd.Method;
+                                txn.FormName = Txn.FormName;
+                                txn.Arm = cmd.Arm;
+                                txn.Position = cmd.Position;
+                                txn.Slot = cmd.Slot;
+                                txn.Value = cmd.Value;
+                                txn.ScriptName = Txn.ScriptName;
+                                txn.TargetJobs = Txn.TargetJobs;
+                                if (cmd.Flag.Equals("End"))
+                                {
+                                    txn.LastOneScript = true;
+                                }
+                                logger.Debug("Excute Script:" + Txn.ScriptName + " Method:" + txn.Method);
+                                Node.SendCommand(txn);
+                            }
+                        }
+                    }
+                }
                 switch (Node.Type)
                 {
                     case "Robot":
@@ -993,7 +1064,7 @@ namespace TransferControl.Engine
                                     RobotFetchMode(Node, Txn.ScriptName);
                                     break;
                                 case "2":
-                                    TargetJob = Txn.TargetJobs[0];
+                                    //TargetJob = Txn.TargetJobs[0];
 
                                     foreach (Path eachPath in PathManagement.GetPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
                                     {
@@ -1027,7 +1098,7 @@ namespace TransferControl.Engine
                         UpdateNodeStatus(Node, Txn);
                         if (_Mode.Equals("Auto"))
                         {
-                            TargetJob = Txn.TargetJobs[0];
+                            //TargetJob = Txn.TargetJobs[0];
                             foreach (Path eachPath in PathManagement.GetPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
                             {
                                 if (!eachPath.Expression.Equals(""))

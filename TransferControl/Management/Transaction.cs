@@ -21,14 +21,14 @@ namespace TransferControl.Management
         public string Slot2 { get; set; }
         public string Method { get; set; }
         public string Arm { get; set; }
-        public string Arm2 { get; set; }
-        public string Angle { get; set; }
+        public string Arm2 { get; set; }       
         public string Value { get; set; }
         public string CommandType { get; set; }
         public string CommandEncodeStr { get; set; }
         public string Type { get; set; }
         public int Piority { get; set; }
         public string ScriptName { get; set; }
+        public bool LastOneScript { get; set; }
         public string FormName { get; set; }
 
         //逾時
@@ -151,7 +151,6 @@ namespace TransferControl.Management
             Method = "";
             Arm = "";
             Arm2 = "";
-            Angle = "";
             Value = "";
             CommandType = "";
             CommandEncodeStr = "";

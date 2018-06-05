@@ -62,6 +62,8 @@
     <Compile Include="Engine\RouteControl.cs" />
     <Compile Include="Management\AlarmInfo.cs" />
     <Compile Include="Management\AlarmManagement.cs" />
+    <Compile Include="Management\CommandScript.cs" />
+    <Compile Include="Management\CommandScriptManagement.cs" />
     <Compile Include="Management\ControllerManagement.cs" />
     <Compile Include="Management\ITransactionReport.cs" />
     <Compile Include="Management\Job.cs" />
