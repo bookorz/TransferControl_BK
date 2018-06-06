@@ -1,4 +1,5 @@
 ﻿using log4net;
+using Newtonsoft.Json;
 using SANWA.Utility;
 using System;
 using System.Collections.Concurrent;
@@ -91,7 +92,7 @@ namespace TransferControl.Management
 
         }
 
-        public void ExcuteScript(string ScriptName, string FormName)
+        public void ExcuteScript(string ScriptName, string FormName,bool Force = false)
         {
             CommandScript StartCmd = CommandScriptManagement.GetStart(ScriptName);
             if (StartCmd != null)
@@ -111,7 +112,7 @@ namespace TransferControl.Management
                 dummyJob.Add(dummy);
                 txn.TargetJobs = dummyJob;
                 logger.Debug("Excute Script:" + ScriptName + " Method:" + txn.Method);
-                SendCommand(txn);
+                SendCommand(txn,Force);
             }
         }
 
@@ -140,7 +141,7 @@ namespace TransferControl.Management
             }
         }
 
-        public bool SendCommand(Transaction txn)
+        public bool SendCommand(Transaction txn,bool Force = false)
         {
             //var watch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -466,6 +467,34 @@ namespace TransferControl.Management
                                 }
                                 break;
                         }
+                    }
+                }
+                Job TargetJob;
+                if (txn.TargetJobs != null)
+                {
+                    if (txn.TargetJobs.Count != 0)
+                    {
+                        TargetJob = txn.TargetJobs[0];
+                    }
+                    else
+                    {
+                        TargetJob = new Job();
+                    }
+                }
+                else
+                {
+                    TargetJob = new Job();
+                }
+                if (txn.CommandType.Equals("CMD") || txn.CommandType.Equals("MOV"))
+                {
+                    if ((this.InterLock || !(this.UnLockByJob.Equals(TargetJob.Job_Id) || this.UnLockByJob.Equals(""))) && !Force)
+                    {
+                        ReturnMessage tmp = new ReturnMessage();
+                        tmp.Value = "Interlock!";
+                        logger.Error(this.Name + " Interlock! Txn:" + JsonConvert.SerializeObject(txn));
+                        ControllerManagement.Get(Controller)._ReportTarget.On_Command_Error(this, txn, tmp);
+
+                        return false;
                     }
                 }
                 if (ControllerManagement.Get(Controller).DoWork(txn))
