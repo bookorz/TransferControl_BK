@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace TransferControl.Management
 {
     public class CommandScriptManagement
     {
-        static Dictionary<string, List<CommandScript>> CommandScriptList = new Dictionary<string, List<CommandScript>>();
+        static ConcurrentDictionary<string, List<CommandScript>> CommandScriptList = new ConcurrentDictionary<string, List<CommandScript>>();
 
         public static void LoadConfig()
         {
@@ -25,7 +26,23 @@ namespace TransferControl.Management
                     tmp.Add(each);
                 }
 
-                CommandScriptList.Add(System.IO.Path.GetFileNameWithoutExtension(FilePath), tmp);
+                CommandScriptList.TryAdd(System.IO.Path.GetFileNameWithoutExtension(FilePath), tmp);
+            }
+            
+        }
+
+        public static void ReloadScriptWithParam(string ScriptName, Dictionary<string, string> Param)
+        {
+            List<CommandScript> Org;
+            if (CommandScriptList.TryGetValue(ScriptName,out Org))
+            {
+                ConfigTool<CommandScript> DeviceCfg = new ConfigTool<CommandScript>();
+                List<CommandScript> tmp = new List<CommandScript>();
+                foreach (CommandScript each in DeviceCfg.ReadFileByList("config/CommandScript/"+ ScriptName+".json",Param))
+                {
+                    tmp.Add(each);
+                }
+                CommandScriptList.TryUpdate(ScriptName, tmp, Org);
             }
         }
 

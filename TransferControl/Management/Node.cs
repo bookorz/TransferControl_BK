@@ -41,6 +41,7 @@ namespace TransferControl.Management
         public string PutOutArm { get; set; }
         public bool AllDone { get; set; }
         public bool InitialComplete { get; set; }
+        public bool IsMapping { get; set; }
         public bool Fetchable { get; set; }
         public bool Release { get; set; }
         public bool HasAlarm { get; set; }
@@ -56,7 +57,7 @@ namespace TransferControl.Management
             public string NodeName { get; set; }
             public string NodeType { get; set; }
             public string Point { get; set; }
-        }      
+        }
 
         public void Initial()
         {
@@ -90,7 +91,7 @@ namespace TransferControl.Management
 
         }
 
-        public void ExcuteScript(string ScriptName,string FormName)
+        public void ExcuteScript(string ScriptName, string FormName)
         {
             CommandScript StartCmd = CommandScriptManagement.GetStart(ScriptName);
             if (StartCmd != null)
@@ -109,7 +110,32 @@ namespace TransferControl.Management
                 dummy.Job_Id = "dummy";
                 dummyJob.Add(dummy);
                 txn.TargetJobs = dummyJob;
-                logger.Debug("Excute Script:"+ ScriptName + " Method:"+ txn.Method);
+                logger.Debug("Excute Script:" + ScriptName + " Method:" + txn.Method);
+                SendCommand(txn);
+            }
+        }
+
+        public void ExcuteScript(string ScriptName, string FormName, Dictionary<string, string> Param)
+        {
+            CommandScriptManagement.ReloadScriptWithParam(ScriptName, Param);
+            CommandScript StartCmd = CommandScriptManagement.GetStart(ScriptName);
+            if (StartCmd != null)
+            {
+                Transaction txn = new Transaction();
+                txn.Method = StartCmd.Method;
+                txn.FormName = FormName;
+                txn.ScriptName = ScriptName;
+                txn.Arm = StartCmd.Arm;
+                txn.Position = StartCmd.Position;
+                txn.Slot = StartCmd.Slot;
+                txn.Value = StartCmd.Value;
+                txn.ScriptIndex = StartCmd.Index;
+                List<Job> dummyJob = new List<Job>();
+                Job dummy = new Job();
+                dummy.Job_Id = "dummy";
+                dummyJob.Add(dummy);
+                txn.TargetJobs = dummyJob;
+                logger.Debug("Excute Script:" + ScriptName + " Method:" + txn.Method);
                 SendCommand(txn);
             }
         }
@@ -352,7 +378,7 @@ namespace TransferControl.Management
                                 txn.CommandEncodeStr = Encoder.Aligner.ErrorMessage(AdrNo, "", txn.Value);
                                 break;
                             case Transaction.Command.AlignerType.GetMode:
-                                txn.CommandEncodeStr = Encoder.Aligner.GetMode(AdrNo, ""); 
+                                txn.CommandEncodeStr = Encoder.Aligner.GetMode(AdrNo, "");
                                 break;
                             case Transaction.Command.AlignerType.AlignerHome:
                                 txn.CommandEncodeStr = Encoder.Aligner.Home(AdrNo, "");
@@ -410,8 +436,38 @@ namespace TransferControl.Management
                         break;
                 }
 
-
-
+                if (this.Type.Equals("Robot"))
+                {
+                    if (txn.TargetJobs.Count == 0)
+                    {
+                        Job tmp;
+                        switch (txn.Arm)
+                        {
+                            case "1":
+                                if (this.JobList.TryGetValue("1", out tmp))
+                                {
+                                    txn.TargetJobs.Add(tmp);
+                                }
+                                break;
+                            case "2":
+                                if (this.JobList.TryGetValue("2", out tmp))
+                                {
+                                    txn.TargetJobs.Add(tmp);
+                                }
+                                break;
+                            case "3":
+                                if (this.JobList.TryGetValue("1", out tmp))
+                                {
+                                    txn.TargetJobs.Add(tmp);
+                                }
+                                if (this.JobList.TryGetValue("2", out tmp))
+                                {
+                                    txn.TargetJobs.Add(tmp);
+                                }
+                                break;
+                        }
+                    }
+                }
                 if (ControllerManagement.Get(Controller).DoWork(txn))
                 {
 

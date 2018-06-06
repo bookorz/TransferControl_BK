@@ -28,6 +28,28 @@ namespace TransferControl.Config
             return result;
         }
 
+        public List<T> ReadFileByList(string FilePath,Dictionary<string,string> Param)
+        {
+            List<T> result = null;
+            try
+            {
+                string t = File.ReadAllText(FilePath, Encoding.UTF8);
+                string val = "";
+                foreach (string each in Param.Keys)
+                {
+                    Param.TryGetValue(each, out val);
+                    t = t.Replace(each,val);
+                }
+                result = JsonConvert.DeserializeObject<List<T>>(t);
+            }
+            catch (Exception ex)
+            {
+                logger.Error("ReadFileByList:" + ex.Message + "\n" + ex.StackTrace);
+            }
+
+            return result;
+        }
+
         public T ReadFile(string FilePath)
         {
             

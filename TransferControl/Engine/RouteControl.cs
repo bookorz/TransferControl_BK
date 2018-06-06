@@ -1166,8 +1166,8 @@ namespace TransferControl.Engine
                             }
                         }
                         break;
-                    case "OCR":
-
+                    case "LoadPort":
+                        UpdateNodeStatus(Node, Txn);
                         break;
                 }
             }
@@ -1290,6 +1290,17 @@ namespace TransferControl.Engine
                             break;
                     }
                     break;
+                case "LoadPort":
+                    switch (Txn.Method)
+                    {
+                        case Transaction.Command.LoadPortType.MappingLoad:
+                            Node.IsMapping = true;
+                            break;
+                        default:
+                            Node.Available = false;
+                            break;
+                    }
+                    break;
             }
             logger.Debug(JsonConvert.SerializeObject(Node));
 
@@ -1297,6 +1308,13 @@ namespace TransferControl.Engine
 
         private void UpdateJobLocation(Node Node, Transaction Txn)
         {
+            if (Txn.TargetJobs[0] != null)
+            {
+                if (Txn.TargetJobs[0].Job_Id.Equals("dummy"))
+                {
+                    return;
+                }
+            }
             switch (Node.Type)
             {
                 case "Robot":
