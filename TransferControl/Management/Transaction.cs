@@ -92,6 +92,7 @@ namespace TransferControl.Management
                 public const string WaferHold = "WaferHold";
                 public const string WaferRelease = "WaferRelease";
                 public const string RobotHome = "RobotHome";
+                public const string RobotHomeSafety = "RobotHomeSafety";
                 public const string RobotOrginSearch = "RobotOrginSearch";
                 public const string RobotServo = "RobotServo";
                 public const string RobotMode = "RobotMode";

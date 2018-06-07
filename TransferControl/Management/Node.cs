@@ -327,6 +327,9 @@ namespace TransferControl.Management
                             case Transaction.Command.RobotType.RobotHome:
                                 txn.CommandEncodeStr = Encoder.Robot.Home(AdrNo, "");
                                 break;
+                            case Transaction.Command.RobotType.RobotHomeSafety:
+                                txn.CommandEncodeStr = Encoder.Robot.HomeSafety(AdrNo, "");
+                                break;
                             case Transaction.Command.RobotType.RobotOrginSearch:
                                 txn.CommandEncodeStr = Encoder.Robot.OrginSearch(AdrNo, "");
                                 break;
