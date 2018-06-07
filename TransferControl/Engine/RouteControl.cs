@@ -88,10 +88,14 @@ namespace TransferControl.Engine
             while (_Mode.Equals("Auto"))
             {
 
+
                 StartTime = DateTime.Now;
                 while (true)
                 {
-
+                    foreach(Node each in NodeManagement.GetLoadPortList())
+                    {
+                        each.Available = false;
+                    }
 
                     logger.Debug("等待可用Foup中");
                     SpinWait.SpinUntil(() => (from LD in NodeManagement.GetLoadPortList()
@@ -462,8 +466,8 @@ namespace TransferControl.Engine
                     }
                     else
                     {
-                        each.ProcessNode = NodeManagement.GetAnotherAligner(lastProcessNode).Name;
-                        //each.ProcessNode = NodeManagement.GetReservAligner(each.FromPort).Name;
+                        //each.ProcessNode = NodeManagement.GetAnotherAligner(lastProcessNode).Name;
+                        each.ProcessNode = NodeManagement.GetReservAligner(each.FromPort).Name;
                     }
                     List<Job> TargetJobs = new List<Job>();
                     TargetJobs.Add(each);
@@ -814,7 +818,7 @@ namespace TransferControl.Engine
                             {
                                 logger.Debug(Node.Name + " 偵測到目標節點未就緒，等待，需求命令:" + Action.EqpType + ":" + Action.Method);
 
-                                SpinWait.SpinUntil(() => Node.Available, SpinWaitTimeOut);
+                                SpinWait.SpinUntil(() => Node.Available && Node.JobList.Count!=0, SpinWaitTimeOut);
 
                                 Node.Available = false;
                                 logger.Debug(Node.Name + " 偵測到目標節點就緒，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
@@ -1295,9 +1299,10 @@ namespace TransferControl.Engine
                     {
                         case Transaction.Command.LoadPortType.MappingLoad:
                             Node.IsMapping = true;
+                            Node.InterLock = false;
                             break;
                         default:
-                            Node.Available = false;
+                            Node.InterLock = true;
                             break;
                     }
                     break;

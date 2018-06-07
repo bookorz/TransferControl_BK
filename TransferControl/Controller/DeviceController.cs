@@ -18,7 +18,7 @@ namespace TransferControl.Controller
     public class DeviceController : IController, IConnectionReport, ITransactionReport
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DeviceController));
-        ICommandReport _ReportTarget;
+        public ICommandReport _ReportTarget;
         IConnection conn;
         DeviceConfig _Config;
         SANWA.Utility.Decoder _Decoder;

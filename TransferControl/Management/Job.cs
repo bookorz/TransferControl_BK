@@ -30,6 +30,7 @@ namespace TransferControl.Management
 
         public Job()
         {
+            Job_Id = "";
             WaitToDo = "";
             Destination = "";
             DestinationSlot = "";
