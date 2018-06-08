@@ -14,6 +14,20 @@ namespace TransferControl.Management
         public string AlarmCode { get; set; }
         public string Desc { get; set; }
         public string EngDesc { get; set; }
+        public string Type { get; set; }
+        public bool IsStop { get; set; }
         public string TimeStamp { get; set; }
+        public AlarmInfo()
+        {
+            NodeName = "";
+            SystemAlarmCode = "";
+            AlarmType = "";
+            AlarmCode = "";
+            Desc = "";
+            EngDesc = "";
+            Type = "";
+            IsStop = false;
+            TimeStamp = "";
+        }
     }
 }

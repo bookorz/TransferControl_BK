@@ -72,6 +72,9 @@ namespace TransferControl.Management
                 public const string MapperArmRetracted = "MapperArmRetracted";
                 public const string MapperArmStretch = "MapperArmStretch";
                 public const string MappingDown = "MappingDown";
+                public const string SetOpAccess = "SetOpAccess";
+                public const string SetOpAccessBlink = "SetOpAccessBlink";
+                
             }
             
 

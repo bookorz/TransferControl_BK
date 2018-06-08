@@ -15,7 +15,7 @@ namespace TransferControl.Management
         {
             AlarmList.Add(Alm);
             AlarmHistory.Add(Alm);
-            
+
         }
 
         public static void Clear()
@@ -45,13 +45,20 @@ namespace TransferControl.Management
 
             if (find.Count() != 0)
             {
-                foreach(AlarmInfo each in find)
+                foreach (AlarmInfo each in find)
                 {
                     AlarmList.Remove(each);
                 }
             }
-            
-            
+
+
+        }
+
+        public static void Remove(AlarmInfo alm)
+        {
+
+            AlarmList.Remove(alm);
+
         }
     }
 }

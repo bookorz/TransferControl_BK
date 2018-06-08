@@ -1307,7 +1307,7 @@ namespace TransferControl.Engine
                     }
                     break;
             }
-            logger.Debug(JsonConvert.SerializeObject(Node));
+            //logger.Debug(JsonConvert.SerializeObject(Node));
 
         }
 
@@ -1459,6 +1459,7 @@ namespace TransferControl.Engine
         public void On_Command_TimeOut(Node Node, Transaction Txn)
         {
             logger.Debug("Transaction TimeOut:" + Txn.CommandEncodeStr);
+            Node.State = "Alarm";
             _EngReport.On_Command_TimeOut(Node, Txn);
         }
 
@@ -1467,8 +1468,15 @@ namespace TransferControl.Engine
             try
             {
                 logger.Debug("On_Event_Trigger");
-                _EngReport.On_Event_Trigger(Node, Msg);
-
+                if (Msg.Command.Equals("ERROR"))
+                {
+                    Node.State = "Alarm";
+                    _EngReport.On_Command_Error(Node, new Transaction(), Msg);
+                }
+                else
+                {
+                    _EngReport.On_Event_Trigger(Node, Msg);
+                }
             }
             catch (Exception e)
             {
@@ -1488,11 +1496,13 @@ namespace TransferControl.Engine
 
         public void On_Node_State_Changed(Node Node, string Status)
         {
+            Node.State = Status;
             _EngReport.On_Node_State_Changed(Node, Status);
         }
 
         public void On_Command_Error(Node Node, Transaction Txn, ReturnMessage Msg)
         {
+            Node.State = "Alarm";
             _EngReport.On_Command_Error(Node, Txn, Msg);
         }
 

@@ -169,6 +169,19 @@ namespace TransferControl.Management
                     case "LoadPort":
                         switch (txn.Method)
                         {
+                            case Transaction.Command.LoadPortType.SetOpAccessBlink:
+                                txn.CommandEncodeStr = Encoder.LoadPort.Indicator(EncoderLoadPort.CommandType.Normal, EncoderLoadPort.IndicatorType.OpAccess, EncoderLoadPort.IndicatorStatus.Flashes);
+                                break;
+                            case Transaction.Command.LoadPortType.SetOpAccess:
+                                if (txn.Value.Equals("1"))
+                                {
+                                    txn.CommandEncodeStr = Encoder.LoadPort.Indicator(EncoderLoadPort.CommandType.Normal, EncoderLoadPort.IndicatorType.OpAccess, EncoderLoadPort.IndicatorStatus.ON);
+                                }
+                                else
+                                {
+                                    txn.CommandEncodeStr = Encoder.LoadPort.Indicator(EncoderLoadPort.CommandType.Normal, EncoderLoadPort.IndicatorType.OpAccess, EncoderLoadPort.IndicatorStatus.OFF);
+                                }
+                                break;
                             case Transaction.Command.LoadPortType.GetLED:
                                 txn.CommandEncodeStr = Encoder.LoadPort.LEDIndicatorStatus();
                                 break;

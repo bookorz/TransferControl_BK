@@ -213,7 +213,7 @@ namespace TransferControl.Controller
                                     _ReportTarget.On_Command_Excuted(Node, Txn, ReturnMsg);
                                     if (Txn.CommandType.Equals("CMD") && !Node.Type.Equals("LoadPort"))
                                     {
-                                        _ReportTarget.On_Node_State_Changed(Node, "RUN");
+                                        _ReportTarget.On_Node_State_Changed(Node, "Run");
                                     }
                                     break;
                                 case ReturnMessage.ReturnType.Finished:
@@ -221,7 +221,7 @@ namespace TransferControl.Controller
                                     _ReportTarget.On_Command_Finished(Node, Txn, ReturnMsg);
                                     if (!Node.Type.Equals("LoadPort"))
                                     {
-                                        _ReportTarget.On_Node_State_Changed(Node, "IDLE");
+                                        _ReportTarget.On_Node_State_Changed(Node, "Idle");
                                     }
                                     break;
                                 case ReturnMessage.ReturnType.Error:

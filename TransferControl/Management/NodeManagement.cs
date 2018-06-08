@@ -31,6 +31,49 @@ namespace TransferControl.Management
             }
         }
 
+        public static string GetCurrentState()
+        {
+            string result = "";
+            var findAlarm = from node in NodeList.Values.ToList()
+                           where node.State.Equals("Alarm")
+                           select node;
+            if (findAlarm.Count() != 0)
+            {
+                result = "Alarm";
+            }
+            else
+            {
+                var findRun = from node in NodeList.Values.ToList()
+                                where node.State.Equals("Run")
+                                select node;
+                if (findRun.Count() != 0)
+                {
+                    result = "Run";
+                }
+                else
+                {
+                    var findIdle = from node in NodeList.Values.ToList()
+                                  where node.State.Equals("Idle")
+                                  select node;
+                    if (findIdle.Count() != 0)
+                    {
+                        result = "Idle";
+                    }
+                    else
+                    {
+                        var findDown = from node in NodeList.Values.ToList()
+                                       where node.State.Equals("Down")
+                                       select node;
+                        if (findDown.Count() != 0)
+                        {
+                            result = "Down";
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
         public static List<Node> GetLoadPortList()
         {
             List<Node> result = new List<Node>();
