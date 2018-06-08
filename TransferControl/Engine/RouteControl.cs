@@ -72,20 +72,31 @@ namespace TransferControl.Engine
 
         }
 
-        public void Auto(object ScriptName)
+        public void Start(object ScriptName)
         {
             lock (this)
             {
-                if (_Mode == "Auto")
+                if (_Mode == "Start")
                 {
-                    throw new Exception("目前已在Auto模式");
+                    throw new Exception("目前已在Start模式");
                 }
                 else
                 {
-                    _Mode = "Auto";
+                    _Mode = "Start";
+                    //檢查各狀態
+                    //LP
+                    foreach (Node port in NodeManagement.GetLoadPortList())
+                    {
+                        if (port.Enable)
+                        {
+                            Transaction txn = new Transaction();
+                            txn.Method = Transaction.Command.LoadPortType.GetLED;
+                            port.SendCommand(txn);
+                        }
+                    }
                 }
             }
-            while (_Mode.Equals("Auto"))
+            while (_Mode.Equals("Start"))
             {
 
 
@@ -100,14 +111,14 @@ namespace TransferControl.Engine
                     logger.Debug("等待可用Foup中");
                     SpinWait.SpinUntil(() => (from LD in NodeManagement.GetLoadPortList()
                                               where LD.Available == true && LD.Mode.Equals("LD")
-                                              select LD).Count() != 0 || !_Mode.Equals("Auto"), SpinWaitTimeOut);
+                                              select LD).Count() != 0 || !_Mode.Equals("Start"), SpinWaitTimeOut);
                     if ((from LD in NodeManagement.GetLoadPortList()
                          where LD.Available == true
-                         select LD).Count() != 0 || !_Mode.Equals("Auto"))
+                         select LD).Count() != 0 || !_Mode.Equals("Start"))
                     {
-                        if (!_Mode.Equals("Auto"))
+                        if (!_Mode.Equals("Start"))
                         {
-                            logger.Debug("結束Auto模式");
+                            logger.Debug("結束Start模式");
                             return;
                         }
                         else
@@ -144,7 +155,7 @@ namespace TransferControl.Engine
                         {
 
 
-                            if (!_Mode.Equals("Auto"))
+                            if (!_Mode.Equals("Start"))
                             {
                                 return;
                             }
@@ -174,10 +185,10 @@ namespace TransferControl.Engine
                     RobotFetchMode(robot, ScriptName.ToString());
                 }
                 logger.Debug("等待搬運週期完成");
-                SpinWait.SpinUntil(() => CheckCycle() || !_Mode.Equals("Auto"), SpinWaitTimeOut); //等待搬運週期完成
+                SpinWait.SpinUntil(() => CheckCycle() || !_Mode.Equals("Start"), SpinWaitTimeOut); //等待搬運週期完成
                 logger.Debug("搬運週期完成，下個周期開始");
             }
-            logger.Debug("結束Auto模式");
+            logger.Debug("結束Start模式");
         }
 
         private bool CheckCycle()
@@ -978,7 +989,7 @@ namespace TransferControl.Engine
                 {
                     Node.CurrentPosition = Txn.Position;
                 }
-                if (_Mode.Equals("Auto"))
+                if (_Mode.Equals("Start"))
                 {
                     switch (Node.Phase)
                     {
@@ -1070,7 +1081,7 @@ namespace TransferControl.Engine
                     case "Robot":
                         UpdateJobLocation(Node, Txn);
                         UpdateNodeStatus(Node, Txn);
-                        if (_Mode.Equals("Auto"))
+                        if (_Mode.Equals("Start"))
                         {
                             switch (Node.Phase)
                             {
@@ -1110,7 +1121,7 @@ namespace TransferControl.Engine
                     case "Aligner":
 
                         UpdateNodeStatus(Node, Txn);
-                        if (_Mode.Equals("Auto"))
+                        if (_Mode.Equals("Start"))
                         {
                             //TargetJob = Txn.TargetJobs[0];
                             foreach (Path eachPath in PathManagement.GetPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
