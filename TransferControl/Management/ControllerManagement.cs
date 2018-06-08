@@ -15,16 +15,16 @@ namespace TransferControl.Management
         public static DeviceController Get(string Name)
         {
             DeviceController result = null;
-           
+
             Controllers.TryGetValue(Name, out result);
-            
+
             return result;
         }
         public static bool Add(string Name, DeviceController Controller)
         {
             bool result = false;
 
-           
+
             if (!Controllers.ContainsKey(Name))
             {
                 Controllers.TryAdd(Name, Controller);
@@ -36,7 +36,7 @@ namespace TransferControl.Management
 
         public static void ConnectAll()
         {
-            foreach(DeviceController each in Controllers.Values.ToList())
+            foreach (DeviceController each in Controllers.Values.ToList())
             {
                 each.Connect();
             }
@@ -47,6 +47,22 @@ namespace TransferControl.Management
             foreach (DeviceController each in Controllers.Values.ToList())
             {
                 each.Close();
+            }
+        }
+
+        public static bool CheckAllConnection()
+        {
+            var find = from ctrl in Controllers.Values.ToList()
+                       where !ctrl.Status.Equals("Connected") && ctrl._Config.Enable
+                       select ctrl;
+
+            if (find.Count() == 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
     }

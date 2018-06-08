@@ -20,7 +20,7 @@ namespace TransferControl.Controller
         private static readonly ILog logger = LogManager.GetLogger(typeof(DeviceController));
         public ICommandReport _ReportTarget;
         IConnection conn;
-        DeviceConfig _Config;
+        public DeviceConfig _Config;
         SANWA.Utility.Decoder _Decoder;
         ConcurrentDictionary<string, Transaction> TransactionList = new ConcurrentDictionary<string, Transaction>();
         public string Name { get; set; }
@@ -43,7 +43,7 @@ namespace TransferControl.Controller
             }
             _Decoder = new SANWA.Utility.Decoder(Config.DeviceType);
             this.Name = _Config.DeviceName;
-
+            this.Status = "";
         }
         public void Close()
         {
@@ -253,20 +253,23 @@ namespace TransferControl.Controller
 
         public void On_Connection_Connected(string Msg)
         {
-            _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Connected");
             this.Status = "Connected";
+            _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Connected");
+
         }
 
         public void On_Connection_Connecting(string Msg)
         {
-            _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Connecting");
             this.Status = "Connecting";
+            _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Connecting");
+
         }
 
         public void On_Connection_Disconnected(string Msg)
         {
-            _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Disconnected");
             this.Status = "Disconnected";
+            _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Disconnected");
+
         }
 
         public void On_Connection_Error(string Msg)

@@ -35,7 +35,10 @@ namespace TransferControl.Engine
             ConfigTool<DeviceConfig> DeviceCfg = new ConfigTool<DeviceConfig>();
             foreach (DeviceConfig eachDevice in DeviceCfg.ReadFileByList("config/Controller/Controllers.json"))
             {
-
+                if (!eachDevice.Enable)
+                {
+                    continue;
+                }
                 DeviceController ctrl = new DeviceController(eachDevice, this);
                 //ctrl.Connect();
                 ControllerManagement.Add(eachDevice.DeviceName, ctrl);
@@ -84,6 +87,11 @@ namespace TransferControl.Engine
                 {
                     _Mode = "Start";
                     //檢查各狀態
+                    foreach (Node node in NodeManagement.GetList())
+                    {
+                        node.State = "Idle";
+                        _EngReport.On_Node_State_Changed(node,"Idle");
+                    }
                     //LP
                     foreach (Node port in NodeManagement.GetLoadPortList())
                     {
@@ -103,7 +111,7 @@ namespace TransferControl.Engine
                 StartTime = DateTime.Now;
                 while (true)
                 {
-                    foreach(Node each in NodeManagement.GetLoadPortList())
+                    foreach (Node each in NodeManagement.GetLoadPortList())
                     {
                         each.Available = false;
                     }
@@ -829,7 +837,7 @@ namespace TransferControl.Engine
                             {
                                 logger.Debug(Node.Name + " 偵測到目標節點未就緒，等待，需求命令:" + Action.EqpType + ":" + Action.Method);
 
-                                SpinWait.SpinUntil(() => Node.Available && Node.JobList.Count!=0, SpinWaitTimeOut);
+                                SpinWait.SpinUntil(() => Node.Available && Node.JobList.Count != 0, SpinWaitTimeOut);
 
                                 Node.Available = false;
                                 logger.Debug(Node.Name + " 偵測到目標節點就緒，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
@@ -1515,6 +1523,7 @@ namespace TransferControl.Engine
         {
             Node.State = "Alarm";
             _EngReport.On_Command_Error(Node, Txn, Msg);
+            _EngReport.On_Node_State_Changed(Node, "Alarm");
         }
 
     }
