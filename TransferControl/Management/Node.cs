@@ -35,6 +35,7 @@ namespace TransferControl.Management
         public bool GetMutex { get; set; }
         public bool InterLock { get; set; }
         public string State { get; set; }
+        public string StatusInfo { get; set; }
         public string Mode { get; set; }
         public bool Reserve { get; set; }
         public bool PutOut { get; set; }
@@ -72,6 +73,7 @@ namespace TransferControl.Management
             PutOutArm = "";
             UnLockByJob = "";
             State = "";
+            StatusInfo = "";
             PutOut = false;
             PutAvailable = true;
             GetAvailable = true;

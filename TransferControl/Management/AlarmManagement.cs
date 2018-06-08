@@ -23,6 +23,22 @@ namespace TransferControl.Management
             AlarmList.Clear();
         }
 
+        public static bool HasCritical()
+        {
+            var find = from Alm in AlarmList.ToList()
+                       where Alm.IsStop == true
+                       select Alm;
+
+            if (find.Count() != 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         public static List<AlarmInfo> GetAll()
         {
             List<AlarmInfo> result = null;
