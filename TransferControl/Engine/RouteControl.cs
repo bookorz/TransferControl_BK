@@ -86,10 +86,10 @@ namespace TransferControl.Engine
                 {
                     throw new Exception("目前已在Start模式");
                 }
-                else if (!IsInitial)
-                {
-                    throw new Exception("請先執行Initial");
-                }
+                //else if (!IsInitial)
+                //{
+                //    throw new Exception("請先執行Initial");
+                //}
                 else
                 {
                     _Mode = "Start";
@@ -100,15 +100,15 @@ namespace TransferControl.Engine
                         _EngReport.On_Node_State_Changed(node, "Idle");
                     }
                     //LP
-                    foreach (Node port in NodeManagement.GetLoadPortList())
-                    {
-                        if (port.Enable)
-                        {
-                            Transaction txn = new Transaction();
-                            txn.Method = Transaction.Command.LoadPortType.GetLED;
-                            port.SendCommand(txn);
-                        }
-                    }
+                    //foreach (Node port in NodeManagement.GetLoadPortList())
+                    //{
+                    //    if (port.Enable)
+                    //    {
+                    //        Transaction txn = new Transaction();
+                    //        txn.Method = Transaction.Command.LoadPortType.GetLED;
+                    //        port.SendCommand(txn);
+                    //    }
+                    //}
                 }
             }
             while (_Mode.Equals("Start"))
@@ -845,7 +845,7 @@ namespace TransferControl.Engine
                             {
                                 logger.Debug(Node.Name + " 偵測到目標節點未就緒，等待，需求命令:" + Action.EqpType + ":" + Action.Method);
 
-                                SpinWait.SpinUntil(() => Node.Available && Node.JobList.Count != 0, SpinWaitTimeOut);
+                                SpinWait.SpinUntil(() => Node.Available && Node.JobList.Count == 0, SpinWaitTimeOut);
 
                                 Node.Available = false;
                                 logger.Debug(Node.Name + " 偵測到目標節點就緒，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);

@@ -14,7 +14,7 @@ namespace TransferControl.Management
     public class Node
     {
 
-        
+
 
 
         ILog logger = LogManager.GetLogger(typeof(Node));
@@ -95,7 +95,7 @@ namespace TransferControl.Management
 
         }
 
-        public void ExcuteScript(string ScriptName, string FormName,bool Force = false)
+        public void ExcuteScript(string ScriptName, string FormName, bool Force = false)
         {
             CommandScript StartCmd = CommandScriptManagement.GetStart(ScriptName);
             if (StartCmd != null)
@@ -115,7 +115,7 @@ namespace TransferControl.Management
                 dummyJob.Add(dummy);
                 txn.TargetJobs = dummyJob;
                 logger.Debug("Excute Script:" + ScriptName + " Method:" + txn.Method);
-                SendCommand(txn,Force);
+                SendCommand(txn, Force);
             }
         }
 
@@ -144,7 +144,7 @@ namespace TransferControl.Management
             }
         }
 
-        public bool SendCommand(Transaction txn,bool Force = false)
+        public bool SendCommand(Transaction txn, bool Force = false)
         {
             //var watch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -152,12 +152,13 @@ namespace TransferControl.Management
             bool result = false;
             try
             {
-                
+
                 IController Ctrl = ControllerManagement.Get(Controller);
-                if (this.Brand.ToUpper().Equals("KAWASAKI")) {
+                if (this.Brand.ToUpper().Equals("KAWASAKI"))
+                {
 
                     txn.Seq = Ctrl.GetNextSeq();
-                    
+
                 }
                 else
                 {
@@ -166,25 +167,28 @@ namespace TransferControl.Management
                 txn.AdrNo = AdrNo;
                 txn.NodeName = this.Name;
                 txn.NodeType = Type;
-
-                if (!txn.Value.Equals(""))
+                if (txn.Value != null)
                 {
-                    CmdParamManagement.ParamMapping Mapping = CmdParamManagement.FindMapping(this.Brand.ToUpper(),txn.Method,"Value", txn.Value);
-                    if (Mapping != null)
+                    if (!txn.Value.Equals(""))
                     {
-                        txn.Value = Mapping.MappingCode;
+                        CmdParamManagement.ParamMapping Mapping = CmdParamManagement.FindMapping(this.Brand.ToUpper(), txn.Method, "Value", txn.Value);
+                        if (Mapping != null)
+                        {
+                            txn.Value = Mapping.MappingCode;
+                        }
                     }
                 }
-
-                if (!txn.Arm.Equals(""))
+                if (txn.Arm != null)
                 {
-                    CmdParamManagement.ParamMapping Mapping = CmdParamManagement.FindMapping(this.Brand.ToUpper(), txn.Method, "Arm", txn.Arm);
-                    if (Mapping != null)
+                    if (!txn.Arm.Equals(""))
                     {
-                        txn.Arm = Mapping.MappingCode;
+                        CmdParamManagement.ParamMapping Mapping = CmdParamManagement.FindMapping(this.Brand.ToUpper(), txn.Method, "Arm", txn.Arm);
+                        if (Mapping != null)
+                        {
+                            txn.Arm = Mapping.MappingCode;
+                        }
                     }
                 }
-
                 foreach (Route each in RouteTable)
                 {
                     if (txn.Position.Equals(each.NodeName))
