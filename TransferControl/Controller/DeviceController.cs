@@ -27,6 +27,9 @@ namespace TransferControl.Controller
         public string Name { get; set; }
         public string Status { get; set; }
         public int TrxNo = 1;
+        bool WaitingForSync = false;
+        string ReturnForSync = "";
+        string ReturnTypeForSync = "";
 
         public DeviceController(DeviceConfig Config, ICommandReport ReportTarget)
         {
@@ -75,6 +78,26 @@ namespace TransferControl.Controller
             {
                 logger.Error(_Config.DeviceName + "(ConnectToServer " + _Config.IPAdress + ":" + _Config.Port.ToString() + ")" + e.Message + "\n" + e.StackTrace);
             }
+        }
+
+        public string DoWorkSync(string Cmd)
+        {
+            string result = "";
+            WaitingForSync = true;
+            conn.Send(Cmd);
+            SpinWait.SpinUntil(() => !WaitingForSync, 30000);
+            if (WaitingForSync)
+            {
+                result = "Command time out!";
+            }
+            else
+            {
+                result = ReturnForSync;
+                ReturnForSync = "";
+                ReturnTypeForSync = "";
+            }
+            WaitingForSync = false;
+            return result;
         }
 
         public bool DoWork(Transaction Txn)
@@ -144,9 +167,41 @@ namespace TransferControl.Controller
                 string Msg = (string)MsgObj;
                 logger.Debug(_Config.DeviceName + " Recieve:" + Msg.Replace("\r", ""));
 
+
+
                 List<ReturnMessage> ReturnMsgList = _Decoder.GetMessage(Msg);
                 foreach (ReturnMessage ReturnMsg in ReturnMsgList)
                 {
+                    if (WaitingForSync)
+                    {
+                        if (ReturnTypeForSync.Equals("CMD"))
+                        {
+                            if (ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Finished))
+                            {
+                                ReturnForSync = Msg;
+                                WaitingForSync = false;
+                                return;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            if (ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Excuted))
+                            {
+                                ReturnForSync = Msg;
+                                WaitingForSync = false;
+                                return;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+                    }
+
                     string key = "";
                     if (_Config.DeviceType.ToUpper().Equals("KAWASAKI"))
                     {
@@ -180,12 +235,12 @@ namespace TransferControl.Controller
                                         {
                                             continue;
                                         }
-                                        else if(ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Finished))
+                                        else if (ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Finished))
                                         {
                                             ReturnMsg.Type = ReturnMessage.ReturnType.Excuted;
                                         }
                                     }
-                                   
+
                                 }
                                 else
                                 {
