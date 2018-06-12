@@ -42,7 +42,7 @@ namespace TransferControl.Management
         public static List<AlarmInfo> GetAll()
         {
             List<AlarmInfo> result = null;
-            result = AlarmList.ToList();
+            result = AlarmList;
             return result;
         }
 

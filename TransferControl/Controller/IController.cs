@@ -12,5 +12,7 @@ namespace TransferControl.Controller
         void Connect();
         void Close();
         bool DoWork(Transaction Txn);
+        string GetNextSeq();
+        SANWA.Utility.Encoder GetEncoder();
     }
 }

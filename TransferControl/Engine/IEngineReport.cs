@@ -21,5 +21,6 @@ namespace TransferControl.Engine
         void On_Port_Finished(string PortName);
         void On_Job_Location_Changed(Job Job);
         void On_Script_Finished(Node Node, string ScriptName,string FormName);
+        void On_InterLock_Report(Node Node, bool InterLock);
     }
 }

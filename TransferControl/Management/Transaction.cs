@@ -12,6 +12,8 @@ namespace TransferControl.Management
 
         public List<Job> TargetJobs { get; set; }
         public string AdrNo { get; set; }
+        public string Seq { get; set; }
+        public string NodeName { get; set; }
         public string NodeType { get; set; }
         public string Position { get; set; }
         public string Point { get; set; }
@@ -169,7 +171,8 @@ namespace TransferControl.Management
 
             timeOutTimer.Enabled = false;
 
-            timeOutTimer.Interval = 10000;
+            //timeOutTimer.Interval = 10000;
+            timeOutTimer.Interval = 999999;
 
             timeOutTimer.Elapsed += new System.Timers.ElapsedEventHandler(TimeOutMonitor);
 

@@ -20,6 +20,7 @@ namespace TransferControl.Engine
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(RouteControl));
         string _Mode = "";
+        public bool IsInitial = false;
         DateTime StartTime = new DateTime();
         IEngineReport _EngReport;
         public static SystemConfig SysConfig;
@@ -54,6 +55,7 @@ namespace TransferControl.Engine
 
             PathManagement.LoadConfig();
             CommandScriptManagement.LoadConfig();
+            CmdParamManagement.Initialize();
         }
 
         public void ConnectAll()
@@ -71,6 +73,7 @@ namespace TransferControl.Engine
             lock (this)
             {
                 _Mode = "Stop";
+                IsInitial = false;
             }
 
         }
@@ -83,6 +86,10 @@ namespace TransferControl.Engine
                 {
                     throw new Exception("目前已在Start模式");
                 }
+                else if (!IsInitial)
+                {
+                    throw new Exception("請先執行Initial");
+                }
                 else
                 {
                     _Mode = "Start";
@@ -90,7 +97,7 @@ namespace TransferControl.Engine
                     foreach (Node node in NodeManagement.GetList())
                     {
                         node.State = "Idle";
-                        _EngReport.On_Node_State_Changed(node,"Idle");
+                        _EngReport.On_Node_State_Changed(node, "Idle");
                     }
                     //LP
                     foreach (Node port in NodeManagement.GetLoadPortList())
@@ -295,6 +302,7 @@ namespace TransferControl.Engine
                             RobotNode.Release = true;
                             TimeSpan diff = DateTime.Now - StartTime;
                             logger.Info("Process Time: " + diff.TotalSeconds);
+                            _EngReport.On_Node_State_Changed(PortNode, "Ready To UnLoad");
                             _EngReport.On_Port_Finished(PortNode.Name);
 
                         }
@@ -1319,6 +1327,10 @@ namespace TransferControl.Engine
                         case Transaction.Command.LoadPortType.MappingLoad:
                             Node.IsMapping = true;
                             Node.InterLock = false;
+                            
+                            break;
+                        case Transaction.Command.LoadPortType.Unload:
+                            _EngReport.On_Node_State_Changed(Node, "Transfer Ready");
                             break;
                         default:
                             Node.InterLock = true;
@@ -1494,6 +1506,40 @@ namespace TransferControl.Engine
                 }
                 else
                 {
+                    switch (Node.Type)
+                    {
+                        case "LoadPort":
+
+                            switch (Msg.Command)
+                            {
+                                case "MANSW":
+                                    if (this.GetMode().Equals("Start"))
+                                    {
+                                        Node.ExcuteScript("LoadPortMapping", "MANSW", true);
+                                        _EngReport.On_Node_State_Changed(Node, "Transfer Blocked");
+                                    }
+                                    break;
+                                case "PODON":
+                                    if (this.GetMode().Equals("Start"))
+                                    {
+
+                                        Node.ExcuteScript("LoadPortFoupIn", "LoadPortFoup", true);
+                                    }
+                                    _EngReport.On_Node_State_Changed(Node, "Ready To Load");
+
+                                    break;
+                                case "PODOF":
+                                    if (this.GetMode().Equals("Start"))
+                                    {
+                                        Node.ExcuteScript("LoadPortFoupOut", "LoadPortFoup", true);
+                                    }
+                                    _EngReport.On_Node_State_Changed(Node, "Empty");
+
+                                    break;
+                            }
+                            break;
+                    }
+
                     _EngReport.On_Event_Trigger(Node, Msg);
                 }
             }

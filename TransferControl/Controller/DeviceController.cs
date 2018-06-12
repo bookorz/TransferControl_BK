@@ -22,9 +22,11 @@ namespace TransferControl.Controller
         IConnection conn;
         public DeviceConfig _Config;
         SANWA.Utility.Decoder _Decoder;
+        public SANWA.Utility.Encoder Encoder;
         ConcurrentDictionary<string, Transaction> TransactionList = new ConcurrentDictionary<string, Transaction>();
         public string Name { get; set; }
         public string Status { get; set; }
+        public int TrxNo = 1;
 
         public DeviceController(DeviceConfig Config, ICommandReport ReportTarget)
         {
@@ -42,6 +44,10 @@ namespace TransferControl.Controller
 
             }
             _Decoder = new SANWA.Utility.Decoder(Config.DeviceType);
+
+            Encoder = new SANWA.Utility.Encoder(Config.DeviceType);
+
+
             this.Name = _Config.DeviceName;
             this.Status = "";
         }
@@ -90,7 +96,17 @@ namespace TransferControl.Controller
                 Txn.Type = "";
                 //Txn.CommandType = "";
             }
-            if (TransactionList.TryAdd(Txn.AdrNo + Txn.Type, Txn))
+            string key = "";
+            if (_Config.DeviceType.ToUpper().Equals("KAWASAKI"))
+            {
+
+                key = Txn.Seq;
+            }
+            else
+            {
+                key = Txn.AdrNo + Txn.Type;
+            }
+            if (TransactionList.TryAdd(key, Txn))
             {
 
                 Txn.SetTimeOutReport(this);
@@ -131,22 +147,66 @@ namespace TransferControl.Controller
                 List<ReturnMessage> ReturnMsgList = _Decoder.GetMessage(Msg);
                 foreach (ReturnMessage ReturnMsg in ReturnMsgList)
                 {
+                    string key = "";
+                    if (_Config.DeviceType.ToUpper().Equals("KAWASAKI"))
+                    {
+                        key = ReturnMsg.Seq;
+
+                    }
+                    else
+                    {
+                        key = ReturnMsg.NodeAdr + ReturnMsg.Command;
+                    }
+
+
                     try
                     {
                         Transaction Txn = null;
-                        Node Node;
+                        Node Node = null;
                         if (ReturnMsg != null)
                         {
-                            Node = NodeManagement.GetByController(_Config.DeviceName, ReturnMsg.NodeAdr);
+                            if (_Config.DeviceType.ToUpper().Equals("KAWASAKI"))
+                            {
+                                if (TransactionList.TryGetValue(key, out Txn))
+                                {
+                                    Node = NodeManagement.Get(Txn.NodeName);
+                                    if (!Txn.CommandType.Equals("GET") && !Txn.CommandType.Equals("PUT") && !Txn.CommandType.Equals("CMD"))
+                                    {
+                                        Txn.CommandType = Encoder.GetCommandType(Txn.CommandType);
+                                    }
+                                    if (!Txn.CommandType.Equals("CMD"))
+                                    {
+                                        if (ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Excuted))
+                                        {
+                                            continue;
+                                        }
+                                        else if(ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Finished))
+                                        {
+                                            ReturnMsg.Type = ReturnMessage.ReturnType.Excuted;
+                                        }
+                                    }
+                                   
+                                }
+                                else
+                                {
+                                    logger.Debug("Transaction not exist:key=" + key);
+                                    return;
+                                }
+                            }
+                            else
+                            {
+                                Node = NodeManagement.GetByController(_Config.DeviceName, ReturnMsg.NodeAdr);
+                            }
                             //lock (TransactionList)
                             //{
                             lock (Node)
                             {
+
                                 if (ReturnMsg.Type == ReturnMessage.ReturnType.Event)
                                 {
                                     //_ReportTarget.On_Event_Trigger(Node, ReturnMsg);
                                 }
-                                else if (TransactionList.TryRemove(ReturnMsg.NodeAdr + ReturnMsg.Command, out Txn))
+                                else if (TransactionList.TryRemove(key, out Txn))
                                 {
 
                                     switch (ReturnMsg.Type)
@@ -162,7 +222,7 @@ namespace TransferControl.Controller
                                                 Txn.SetTimeOutMonitor(false);
                                                 Txn.SetTimeOut(30000);
                                                 Txn.SetTimeOutMonitor(true);
-                                                TransactionList.TryAdd(ReturnMsg.NodeAdr + ReturnMsg.Command, Txn);
+                                                TransactionList.TryAdd(key, Txn);
                                             }
                                             //_ReportTarget.On_Command_Excuted(Node, Txn, ReturnMsg);
                                             break;
@@ -302,6 +362,29 @@ namespace TransferControl.Controller
             {
                 logger.Debug(_Config.DeviceName + "(On_Transaction_TimeOut TryRemove Txn fail.");
             }
+        }
+
+        public string GetNextSeq()
+        {
+            string result = "";
+            lock (this)
+            {
+                result = TrxNo.ToString("000");
+                if (TrxNo >= 999)
+                {
+                    TrxNo = 1;
+                }
+                else
+                {
+                    TrxNo++;
+                }
+            }
+            return result;
+        }
+
+        public SANWA.Utility.Encoder GetEncoder()
+        {
+            return Encoder;
         }
     }
 }

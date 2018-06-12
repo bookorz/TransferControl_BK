@@ -34,6 +34,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\SANWA-Function-For-Test\log4net.dll</HintPath>
     </Reference>
+    <Reference Include="mysql.data, Version=5.2.7.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Adam\WindowsFormsApp1\lib\mysql.data.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -62,9 +66,11 @@
     <Compile Include="Engine\RouteControl.cs" />
     <Compile Include="Management\AlarmInfo.cs" />
     <Compile Include="Management\AlarmManagement.cs" />
+    <Compile Include="Management\CmdParamManagement.cs" />
     <Compile Include="Management\CommandScript.cs" />
     <Compile Include="Management\CommandScriptManagement.cs" />
     <Compile Include="Management\ControllerManagement.cs" />
+    <Compile Include="Management\DBUtil.cs" />
     <Compile Include="Management\ITransactionReport.cs" />
     <Compile Include="Management\Job.cs" />
     <Compile Include="Management\JobManagement.cs" />
