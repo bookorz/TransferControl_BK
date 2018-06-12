@@ -310,6 +310,9 @@ namespace TransferControl.Management
                             case Transaction.Command.RobotType.GetStatus:
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Robot.Status(AdrNo, txn.Seq);
                                 break;
+                            case Transaction.Command.RobotType.GetCombineStatus:
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Robot.CombinedStatus(AdrNo, txn.Seq);
+                                break;
                             case Transaction.Command.RobotType.GetSpeed:
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Robot.Speed(AdrNo, txn.Seq);
                                 break;

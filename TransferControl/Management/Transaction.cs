@@ -105,6 +105,7 @@ namespace TransferControl.Management
                 public const string RobotSpeed = "RobotSpeed";
                 public const string Reset = "Reset";
                 public const string GetStatus = "GetStatus";
+                public const string GetCombineStatus = "GetCombineStatus";
                 public const string GetSpeed = "GetSpeed";
                 public const string GetRIO = "GetRIO";
                 public const string GetError = "GetError";
