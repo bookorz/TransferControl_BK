@@ -225,7 +225,7 @@ namespace TransferControl.Controller
                                 if (TransactionList.TryGetValue(key, out Txn))
                                 {
                                     Node = NodeManagement.Get(Txn.NodeName);
-                                    if (!Txn.CommandType.Equals("GET") && !Txn.CommandType.Equals("PUT") && !Txn.CommandType.Equals("CMD"))
+                                    if (!Txn.CommandType.Equals("GET") && !Txn.CommandType.Equals("SET") && !Txn.CommandType.Equals("CMD"))
                                     {
                                         Txn.CommandType = Encoder.GetCommandType(Txn.CommandType);
                                     }

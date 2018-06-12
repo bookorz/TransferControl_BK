@@ -1344,11 +1344,14 @@ namespace TransferControl.Engine
 
         private void UpdateJobLocation(Node Node, Transaction Txn)
         {
-            if (Txn.TargetJobs[0] != null)
+            if (Txn.TargetJobs != null)
             {
-                if (Txn.TargetJobs[0].Job_Id.Equals("dummy"))
+                if (Txn.TargetJobs.Count !=0)
                 {
-                    return;
+                    if (Txn.TargetJobs[0].Job_Id.Equals("dummy"))
+                    {
+                        return;
+                    }
                 }
             }
             switch (Node.Type)
