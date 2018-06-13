@@ -97,6 +97,7 @@ namespace TransferControl.Management
                 public const string WaferHold = "WaferHold";
                 public const string WaferRelease = "WaferRelease";
                 public const string RobotHome = "RobotHome";
+                public const string RobotHomeA = "RobotHomeA";
                 public const string RobotHomeSafety = "RobotHomeSafety";
                 public const string RobotOrginSearch = "RobotOrginSearch";
                 public const string RobotServo = "RobotServo";
@@ -129,6 +130,7 @@ namespace TransferControl.Management
                 public const string AlignerServo = "AlignerServo";
                 public const string AlignerHome = "AlignerHome";
                 public const string GetStatus = "GetStatus";
+                public const string GetCombineStatus = "GetCombineStatus";
                 public const string Reset = "Reset";
                 public const string GetSpeed = "GetSpeed";
                 public const string GetRIO = "GetRIO";

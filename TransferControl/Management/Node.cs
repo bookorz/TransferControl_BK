@@ -380,6 +380,9 @@ namespace TransferControl.Management
                             case Transaction.Command.RobotType.RobotHomeSafety:
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Robot.HomeSafety(AdrNo, txn.Seq);
                                 break;
+                            case Transaction.Command.RobotType.RobotHomeA:
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Robot.HomeOrgin(AdrNo, txn.Seq);
+                                break;
                             case Transaction.Command.RobotType.RobotOrginSearch:
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Robot.OrginSearch(AdrNo, txn.Seq);
                                 break;
@@ -407,61 +410,64 @@ namespace TransferControl.Management
                         switch (txn.Method)
                         {
                             case Transaction.Command.AlignerType.GetStatus:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Status(AdrNo, "");
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Status(AdrNo, txn.Seq);
+                                break;
+                            case Transaction.Command.AlignerType.GetCombineStatus:
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.CombinedStatus(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.GetSpeed:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Speed(AdrNo, "");
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Speed(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.GetRIO:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.StatusIO(AdrNo, "", txn.Value);
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.StatusIO(AdrNo, txn.Seq, txn.Value);
                                 break;
                             case Transaction.Command.AlignerType.Stop:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.DeviceStop(AdrNo, "", txn.Value);
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.DeviceStop(AdrNo, txn.Seq, txn.Value);
                                 break;
                             case Transaction.Command.AlignerType.Pause:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.DevicePause(AdrNo, "");
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.DevicePause(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.Continue:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.DeviceContinue(AdrNo, "");
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.DeviceContinue(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.GetSV:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.SolenoidValve(AdrNo, "", txn.Value);
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.SolenoidValve(AdrNo, txn.Seq, txn.Value);
                                 break;
                             case Transaction.Command.AlignerType.GetError:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.ErrorMessage(AdrNo, "", txn.Value);
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.ErrorMessage(AdrNo, txn.Seq, txn.Value);
                                 break;
                             case Transaction.Command.AlignerType.GetMode:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.GetMode(AdrNo, "");
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.GetMode(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.AlignerHome:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Home(AdrNo, "");
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Home(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.Align:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Align(AdrNo, "", txn.Value);
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Align(AdrNo, txn.Seq, txn.Value);
                                 break;
                             case Transaction.Command.AlignerType.Retract:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Retract(AdrNo, "");
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Retract(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.WaferRelease:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.WaferReleaseHold(AdrNo, "", txn.Arm);
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.WaferReleaseHold(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.WaferHold:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.WaferHold(AdrNo, "");
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.WaferHold(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.AlignerServo:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.ServoOn(AdrNo, "", txn.Value);
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.ServoOn(AdrNo, txn.Seq, txn.Value);
                                 break;
                             case Transaction.Command.AlignerType.AlignerMode:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Mode(AdrNo, "", txn.Value);
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Mode(AdrNo, txn.Seq, txn.Value);
                                 break;
                             case Transaction.Command.AlignerType.AlignerOrigin:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.OrginSearch(AdrNo, "");
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.OrginSearch(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.Reset:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.ErrorReset(AdrNo, "");
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.ErrorReset(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.AlignerSpeed:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.setSpeed(AdrNo, "", txn.Value);
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.setSpeed(AdrNo, txn.Seq, txn.Value);
                                 break;
 
                         }
