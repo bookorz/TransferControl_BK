@@ -449,7 +449,7 @@ namespace TransferControl.Management
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Retract(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.WaferRelease:
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.WaferReleaseHold(AdrNo, txn.Seq, txn.Arm);
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.WaferReleaseHold(AdrNo, txn.Seq);
                                 break;
                             case Transaction.Command.AlignerType.WaferHold:
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.WaferHold(AdrNo, txn.Seq);
