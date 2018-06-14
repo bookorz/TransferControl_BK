@@ -18,6 +18,10 @@ namespace TransferControl.Management
 
             foreach (string FilePath in Directory.GetFiles("config/CommandScript"))
             {
+                if (!System.IO.Path.GetExtension(FilePath).ToUpper().Equals(".JSON"))
+                {
+                    continue;
+                }
                 ConfigTool<CommandScript> DeviceCfg = new ConfigTool<CommandScript>();
                 List<CommandScript> tmp = new List<CommandScript>();
                 foreach (CommandScript each in DeviceCfg.ReadFileByList(FilePath))

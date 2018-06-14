@@ -35,7 +35,7 @@ namespace TransferControl.Management
         {
             bool result = false;
             var findNotInit = from node in NodeList.Values.ToList()
-                              where !node.InitialComplete
+                              where !node.InitialComplete && !node.Type.Equals("OCR")
                               select node;
             if (findNotInit.Count() == 0)
             {

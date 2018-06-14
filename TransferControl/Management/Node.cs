@@ -67,6 +67,10 @@ namespace TransferControl.Management
             JobList = new ConcurrentDictionary<string, Job>();
             ReserveList = new ConcurrentDictionary<string, Job>();
             Phase = "1";
+            if(Type == "Aliger")
+            {
+                Phase = "2";
+            }
             CurrentLoadPort = "";
             LockByNode = "";
             CurrentWaitNode = "";
@@ -213,6 +217,26 @@ namespace TransferControl.Management
                                 else
                                 {
                                     txn.CommandEncodeStr = Ctrl.GetEncoder().LoadPort.Indicator(EncoderLoadPort.CommandType.Normal, EncoderLoadPort.IndicatorType.OpAccess, EncoderLoadPort.IndicatorStatus.OFF);
+                                }
+                                break;
+                            case Transaction.Command.LoadPortType.SetLoad:
+                                if (txn.Value.Equals("1"))
+                                {
+                                    txn.CommandEncodeStr = Ctrl.GetEncoder().LoadPort.Indicator(EncoderLoadPort.CommandType.Normal, EncoderLoadPort.IndicatorType.Load, EncoderLoadPort.IndicatorStatus.ON);
+                                }
+                                else
+                                {
+                                    txn.CommandEncodeStr = Ctrl.GetEncoder().LoadPort.Indicator(EncoderLoadPort.CommandType.Normal, EncoderLoadPort.IndicatorType.Load, EncoderLoadPort.IndicatorStatus.OFF);
+                                }
+                                break;
+                            case Transaction.Command.LoadPortType.SetUnLoad:
+                                if (txn.Value.Equals("1"))
+                                {
+                                    txn.CommandEncodeStr = Ctrl.GetEncoder().LoadPort.Indicator(EncoderLoadPort.CommandType.Normal, EncoderLoadPort.IndicatorType.Unload, EncoderLoadPort.IndicatorStatus.ON);
+                                }
+                                else
+                                {
+                                    txn.CommandEncodeStr = Ctrl.GetEncoder().LoadPort.Indicator(EncoderLoadPort.CommandType.Normal, EncoderLoadPort.IndicatorType.Unload, EncoderLoadPort.IndicatorStatus.OFF);
                                 }
                                 break;
                             case Transaction.Command.LoadPortType.GetLED:

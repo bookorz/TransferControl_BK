@@ -18,6 +18,10 @@ namespace TransferControl.Management
 
             foreach (string FilePath in Directory.GetFiles("config/Script"))
             {
+                if (!System.IO.Path.GetExtension(FilePath).ToUpper().Equals(".JSON"))
+                {
+                    continue;
+                }
                 ConfigTool<Path> DeviceCfg = new ConfigTool<Path>();
                 List<Path> tmp = new List<Path>();
                 foreach (Path each in DeviceCfg.ReadFileByList(FilePath))
@@ -29,7 +33,7 @@ namespace TransferControl.Management
                 ScriptList.Add(System.IO.Path.GetFileNameWithoutExtension(FilePath), tmp);
             }
         }
-        public static List<Path> GetPath(string ScriptName, string JobStatus, string FinishMethod)
+        public static List<Path> GetFinishPath(string ScriptName, string JobStatus, string FinishMethod)
         {
             List<Path> result = new List<Path>();
 
@@ -46,7 +50,18 @@ namespace TransferControl.Management
                 }
                 else
                 {
-                    result = new List<Path>();
+                    findPath = from path in result
+                               where path.JobStatus.Equals("") && path.FinishMethod.Equals(FinishMethod)
+                               select path;
+
+                    if (findPath.Count() != 0)
+                    {
+                        result = findPath.ToList();
+                    }
+                    else
+                    {
+                        result = new List<Path>();
+                    }
                 }
             }
 
@@ -55,21 +70,32 @@ namespace TransferControl.Management
             return result;
         }
 
-        public static List<Path> GetPath(string ScriptName, string ExcuteMethod)
+        public static List<Path> GetExcutePath(string ScriptName, string JobStatus, string ExcuteMethod)
         {
             List<Path> result = new List<Path>();
             if (ScriptList.TryGetValue(ScriptName, out result))
             {
-                var find = from path in result
-                           where path.JobStatus.Equals("") && path.ExcuteMethod.Equals(ExcuteMethod)
-                           select path;
-                if (find.Count() != 0)
+                var findPath = from path in result
+                               where path.JobStatus.Equals(JobStatus) && path.ExcuteMethod.Equals(ExcuteMethod)
+                               select path;
+                if (findPath.Count() != 0)
                 {
-                    result = find.ToList();
+                    result = findPath.ToList();
                 }
                 else
                 {
-                    result = new List<Path>();
+                    findPath = from path in result
+                               where path.JobStatus.Equals("") && path.ExcuteMethod.Equals(ExcuteMethod)
+                               select path;
+
+                    if (findPath.Count() != 0)
+                    {
+                        result = findPath.ToList();
+                    }
+                    else
+                    {
+                        result = new List<Path>();
+                    }
                 }
             }
             return result;

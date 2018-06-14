@@ -54,6 +54,12 @@ namespace TransferControl.Controller
             this.Name = _Config.DeviceName;
             this.Status = "";
         }
+
+        public void ClearTransactionList()
+        {
+            TransactionList.Clear();
+        }
+
         public void Close()
         {
             try
@@ -78,7 +84,7 @@ namespace TransferControl.Controller
             {
                 logger.Error(_Config.DeviceName + "(ConnectToServer " + _Config.IPAdress + ":" + _Config.Port.ToString() + ")" + e.Message + "\n" + e.StackTrace);
             }
-            
+
         }
 
         public string DoWorkSync(string Cmd)
@@ -249,6 +255,21 @@ namespace TransferControl.Controller
                                     return;
                                 }
                             }
+                            else if (_Config.DeviceType.ToUpper().Equals("TDK"))
+                            {
+                                if (TransactionList.TryGetValue(key, out Txn))
+                                {
+                                    Node = NodeManagement.Get(Txn.NodeName);
+                                    if (Txn.CommandType.Equals("SET") && ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Excuted))
+                                    {
+                                        continue;
+                                    }
+                                }
+                                else
+                                {
+                                    Node = NodeManagement.GetByController(_Config.DeviceName, ReturnMsg.NodeAdr);
+                                }
+                            }
                             else
                             {
                                 Node = NodeManagement.GetByController(_Config.DeviceName, ReturnMsg.NodeAdr);
@@ -257,7 +278,7 @@ namespace TransferControl.Controller
                             //{
                             lock (Node)
                             {
-                                
+
                                 if (ReturnMsg.Type == ReturnMessage.ReturnType.Event)
                                 {
                                     //_ReportTarget.On_Event_Trigger(Node, ReturnMsg);
@@ -295,10 +316,17 @@ namespace TransferControl.Controller
                                         case ReturnMessage.ReturnType.Information:
                                             logger.Debug("Txn timmer stoped.");
                                             Txn.SetTimeOutMonitor(false);
-
-                                            ReturnMsg.Type = ReturnMessage.ReturnType.Finished;
+                                            if (_Config.DeviceType.ToUpper().Equals("TDK") && Txn.CommandType.Equals("SET"))
+                                            {
+                                                ReturnMsg.Type = ReturnMessage.ReturnType.Excuted;
+                                            }
+                                            else
+                                            {
+                                                ReturnMsg.Type = ReturnMessage.ReturnType.Finished;
+                                            }
                                             //SpinWait.SpinUntil(() => false, 300);
-                                            ThreadPool.QueueUserWorkItem(new WaitCallback(conn.Send), ReturnMsg.FinCommand);
+                                            //ThreadPool.QueueUserWorkItem(new WaitCallback(conn.Send), ReturnMsg.FinCommand);
+                                            conn.Send(ReturnMsg.FinCommand);
                                             logger.Debug(_Config.DeviceName + "Send:" + ReturnMsg.FinCommand);
                                             break;
                                     }
@@ -307,7 +335,8 @@ namespace TransferControl.Controller
                                 {
                                     if (ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Information))
                                     {
-                                        ThreadPool.QueueUserWorkItem(new WaitCallback(conn.Send), ReturnMsg.FinCommand);
+                                        //ThreadPool.QueueUserWorkItem(new WaitCallback(conn.Send), ReturnMsg.FinCommand);
+                                        conn.Send(ReturnMsg.FinCommand);
                                         logger.Debug(_Config.DeviceName + "Send:" + ReturnMsg.FinCommand);
                                     }
                                     else
@@ -401,13 +430,26 @@ namespace TransferControl.Controller
         public void On_Transaction_TimeOut(Transaction Txn)
         {
             logger.Debug(_Config.DeviceName + "(On_Transaction_TimeOut Txn is timeout:" + Txn.CommandEncodeStr);
+
+            string key = "";
+            if (_Config.DeviceType.ToUpper().Equals("KAWASAKI"))
+            {
+                key = Txn.Seq;
+
+            }
+            else
+            {
+                key = Txn.AdrNo + Txn.Type;
+            }
+
             Txn.SetTimeOutMonitor(false);
-            if (TransactionList.TryRemove(Txn.AdrNo + Txn.Type, out Txn))
+            if (TransactionList.TryRemove(key, out Txn))
             {
                 Node Node = NodeManagement.GetByController(_Config.DeviceName, Txn.AdrNo);
                 if (Node.State.Equals("Pause"))
                 {
                     logger.Debug("Txn timeout,but state is pause. ignore this.");
+                    TransactionList.TryAdd(key, Txn);
                     return;
                 }
                 if (Node != null)

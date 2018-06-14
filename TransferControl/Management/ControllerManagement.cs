@@ -65,5 +65,17 @@ namespace TransferControl.Management
                 return false;
             }
         }
+
+        public static void ClearTransactionList()
+        {
+            var find = from ctrl in Controllers.Values.ToList()
+                       where ctrl._Config.Enable
+                       select ctrl;
+
+            foreach(DeviceController Ctrl in find)
+            {
+                Ctrl.ClearTransactionList();
+            }
+        }
     }
 }

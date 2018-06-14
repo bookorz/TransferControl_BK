@@ -76,7 +76,8 @@ namespace TransferControl.Management
                 public const string MappingDown = "MappingDown";
                 public const string SetOpAccess = "SetOpAccess";
                 public const string SetOpAccessBlink = "SetOpAccessBlink";
-                
+                public const string SetLoad = "SetLoad";
+                public const string SetUnLoad = "SetUnLoad";
             }
             
 
