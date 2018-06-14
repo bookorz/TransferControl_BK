@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TransferControl.Parser;
 
 namespace TransferControl.Engine
 {
@@ -48,7 +49,7 @@ namespace TransferControl.Engine
 
             foreach (Node eachNode in NodeCfg.ReadFileByList("config/Node/Nodes.json"))
             {
-                eachNode.Initial();
+                eachNode.InitialObject();
                 NodeManagement.Add(eachNode.Name, eachNode);
 
             }
@@ -66,6 +67,56 @@ namespace TransferControl.Engine
         public void DisconnectAll()
         {
             ControllerManagement.DisonnectAll();
+        }
+
+        public void Continue()
+        {
+            if (_Mode.Equals("Pause"))
+            {
+                _Mode = "Start";
+                foreach (Node node in NodeManagement.GetList())
+                {
+                    if (node.Type.Equals("Robot"))
+                    {
+                        Transaction txn = new Transaction();
+                        txn.Method = Transaction.Command.RobotType.Continue;
+                        node.SendCommand(txn);
+                        node.State = "Run";
+                    }
+                    else if (node.Type.Equals("Aligner"))
+                    {
+                        Transaction txn = new Transaction();
+                        txn.Method = Transaction.Command.AlignerType.Continue;
+                        node.SendCommand(txn);
+                        node.State = "Run";
+                    }
+                }
+            }
+            else
+            {
+                throw new Exception("狀態錯誤:無法執行");
+            }
+        }
+        public void Pause()
+        {
+            if (_Mode.Equals("Start"))
+            {
+                _Mode = "Pause";
+                foreach (Node node in NodeManagement.GetList())
+                {
+                    if (node.Type.Equals("Robot") || node.Type.Equals("Aligner"))
+                    {
+                        Transaction txn = new Transaction();
+                        txn.Method = Transaction.Command.RobotType.Pause;
+                        node.SendCommand(txn);
+                        node.State = "Pause";
+                    }
+                }
+            }
+            else
+            {
+                throw new Exception("狀態錯誤:尚未啟動");
+            }
         }
 
         public void Stop()
@@ -86,29 +137,21 @@ namespace TransferControl.Engine
                 {
                     throw new Exception("目前已在Start模式");
                 }
-                //else if (!IsInitial)
+                //else if (NodeManagement.IsNeedInitial())
                 //{
-                //    throw new Exception("請先執行Initial");
+                //    throw new Exception("請先執行initial");
                 //}
                 else
                 {
                     _Mode = "Start";
                     //檢查各狀態
-                    foreach (Node node in NodeManagement.GetList())
+                    foreach(Node port in NodeManagement.GetLoadPortList())
                     {
-                        node.State = "Idle";
-                        _EngReport.On_Node_State_Changed(node, "Idle");
+                        Transaction txn = new Transaction();
+                        txn.Method = Transaction.Command.LoadPortType.ReadStatus;
+                        txn.FormName = "StartMode";
+                        port.SendCommand(txn);
                     }
-                    //LP
-                    //foreach (Node port in NodeManagement.GetLoadPortList())
-                    //{
-                    //    if (port.Enable)
-                    //    {
-                    //        Transaction txn = new Transaction();
-                    //        txn.Method = Transaction.Command.LoadPortType.GetLED;
-                    //        port.SendCommand(txn);
-                    //    }
-                    //}
                 }
             }
             while (_Mode.Equals("Start"))
@@ -126,10 +169,10 @@ namespace TransferControl.Engine
                     logger.Debug("等待可用Foup中");
                     SpinWait.SpinUntil(() => (from LD in NodeManagement.GetLoadPortList()
                                               where LD.Available == true && LD.Mode.Equals("LD")
-                                              select LD).Count() != 0 || !_Mode.Equals("Start"), SpinWaitTimeOut);
+                                              select LD).Count() != 0 || _Mode.Equals("Stop"), SpinWaitTimeOut);
                     if ((from LD in NodeManagement.GetLoadPortList()
                          where LD.Available == true
-                         select LD).Count() != 0 || !_Mode.Equals("Start"))
+                         select LD).Count() != 0 || _Mode.Equals("Stop"))
                     {
                         if (!_Mode.Equals("Start"))
                         {
@@ -145,7 +188,7 @@ namespace TransferControl.Engine
                 }
                 foreach (Node robot in NodeManagement.GetEnableRobotList())
                 {
-                    robot.Initial();
+                    robot.InitialObject();
 
                     List<Node> PortList = new List<Node>();
                     foreach (Node.Route eachNode in robot.RouteTable)
@@ -200,7 +243,7 @@ namespace TransferControl.Engine
                     RobotFetchMode(robot, ScriptName.ToString());
                 }
                 logger.Debug("等待搬運週期完成");
-                SpinWait.SpinUntil(() => CheckCycle() || !_Mode.Equals("Start"), SpinWaitTimeOut); //等待搬運週期完成
+                SpinWait.SpinUntil(() => CheckCycle() || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待搬運週期完成
                 logger.Debug("搬運週期完成，下個周期開始");
             }
             logger.Debug("結束Start模式");
@@ -482,7 +525,12 @@ namespace TransferControl.Engine
                 foreach (Job each in Js)
                 {
                     logger.Debug("等待可以放片時機:" + each.Job_Id);
-                    SpinWait.SpinUntil(() => RobotNode.PutAvailable, SpinWaitTimeOut); //等待可以放片時機
+                    SpinWait.SpinUntil(() => RobotNode.PutAvailable || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待可以放片時機
+                    if (_Mode.Equals("Stop"))
+                    {
+                        logger.Debug("離開自動模式");
+                        return;
+                    }
                     logger.Debug("可以放片:" + each.Job_Id);
                     RobotNode.PutAvailable = false;
                     if (lastProcessNode.Equals(""))
@@ -686,19 +734,34 @@ namespace TransferControl.Engine
                             {
                                 logger.Debug(Node.Name + " 偵測到手臂伸出中，等待收回，需求命令:" + Action.EqpType + ":" + Action.Method);
 
-                                SpinWait.SpinUntil(() => !Node.PutOut, SpinWaitTimeOut); //等待Robot手臂收回
+                                SpinWait.SpinUntil(() => !Node.PutOut || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待Robot手臂收回
+                                if (_Mode.Equals("Stop"))
+                                {
+                                    logger.Debug("離開自動模式");
+                                    return;
+                                }
                                 logger.Debug(Node.Name + " 偵測到手臂收回，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
                             }
                             if (CheckPresent(Target) && (Action.Method.Equals(Transaction.Command.RobotType.Put) || Action.Method.Equals(Transaction.Command.RobotType.PutWithoutBack)))
                             {
                                 logger.Debug(Node.Name + " 偵測到目標在席存在中，等待，需求命令:" + Action.EqpType + ":" + Action.Method);
-                                SpinWait.SpinUntil(() => !CheckPresent(Target), SpinWaitTimeOut);
+                                SpinWait.SpinUntil(() => !CheckPresent(Target) || _Mode.Equals("Stop"), SpinWaitTimeOut);
+                                if (_Mode.Equals("Stop"))
+                                {
+                                    logger.Debug("離開自動模式");
+                                    return;
+                                }
                                 logger.Debug(Node.Name + " 偵測到目標在席已被取走，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
                             }
 
                             logger.Debug(Node.Name + " 等待主控權 " + Action.EqpType + ":" + Action.Method + ":" + TargetJob.Job_Id);
                             logger.Debug(JsonConvert.SerializeObject(Node));
-                            SpinWait.SpinUntil(() => (!Node.InterLock && (Node.UnLockByJob.Equals(TargetJob.Job_Id) || Node.UnLockByJob.Equals(""))) || Force, SpinWaitTimeOut); //等待Robot有空
+                            SpinWait.SpinUntil(() => (!Node.InterLock && (Node.UnLockByJob.Equals(TargetJob.Job_Id) || Node.UnLockByJob.Equals(""))) || Force || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待Robot有空
+                            if (_Mode.Equals("Stop"))
+                            {
+                                logger.Debug("離開自動模式");
+                                return;
+                            }
                             lock (Node)
                             {
 
@@ -750,14 +813,24 @@ namespace TransferControl.Engine
                         {
                             logger.Debug(Node.Name + " 等待Robot主控權 :" + Action.EqpType + ":" + Action.Method);
                             //logger.Debug(JsonConvert.SerializeObject(Node));
-                            SpinWait.SpinUntil(() => Node.Phase.Equals("2") && ((Node.GetAvailable && Node.GetMutex && Node.JobList.Count < 2) || (Node.GetAvailable && !Node.InterLock && (Node.UnLockByJob.Equals(TargetJob.Job_Id) || Node.UnLockByJob.Equals("")) && Node.JobList.Count < 2) || Force || !TargetJob.WaitToDo.Equals(Action.Method)), SpinWaitTimeOut); //等待Robot有空
+                            SpinWait.SpinUntil(() => Node.Phase.Equals("2") && ((Node.GetAvailable && Node.GetMutex && Node.JobList.Count < 2) || (Node.GetAvailable && !Node.InterLock && (Node.UnLockByJob.Equals(TargetJob.Job_Id) || Node.UnLockByJob.Equals("")) && Node.JobList.Count < 2) || Force || !TargetJob.WaitToDo.Equals(Action.Method)) || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待Robot有空
+                            if (_Mode.Equals("Stop"))
+                            {
+                                logger.Debug("離開自動模式");
+                                return;
+                            }
                             logger.Debug(JsonConvert.SerializeObject(Node));
                             logger.Debug("TargetJob.Job_Id:" + TargetJob.Job_Id);
                             if (Node.PutOut && !Action.Method.Equals(Transaction.Command.RobotType.GetAfterWait) && !Action.Method.Equals(Transaction.Command.RobotType.PutBack) && !Action.Method.Equals(Transaction.Command.RobotType.Get))
                             {
                                 logger.Debug(Node.Name + " 偵測到手臂伸出中，等待收回，需求命令:" + Action.EqpType + ":" + Action.Method);
 
-                                SpinWait.SpinUntil(() => !Node.PutOut, SpinWaitTimeOut); //等待Robot手臂收回
+                                SpinWait.SpinUntil(() => !Node.PutOut || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待Robot手臂收回
+                                if (_Mode.Equals("Stop"))
+                                {
+                                    logger.Debug("離開自動模式");
+                                    return;
+                                }
                                 logger.Debug(Node.Name + " 偵測到手臂收回，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
                             }
 
@@ -838,15 +911,23 @@ namespace TransferControl.Engine
                         while (true)//等待主控權
                         {
                             logger.Debug(Node.Name + " 等待主控權 " + Action.EqpType + ":" + Action.Method);
-
-                            SpinWait.SpinUntil(() => (!Node.InterLock && (Node.UnLockByJob.Equals("") || Node.UnLockByJob.Equals(TargetJob.Job_Id))) || Force, SpinWaitTimeOut);
-
+                            logger.Debug(Node.Name + " 等待主控權 " + Node.InterLock + "," + Node.UnLockByJob + "," + TargetJob.Job_Id);
+                            SpinWait.SpinUntil(() => (!Node.InterLock && (Node.UnLockByJob.Equals("") || Node.UnLockByJob.Equals(TargetJob.Job_Id))) || Force || _Mode.Equals("Stop"), SpinWaitTimeOut);
+                            if (_Mode.Equals("Stop"))
+                            {
+                                logger.Debug("離開自動模式");
+                                return;
+                            }
                             if (Action.Method.Equals(Transaction.Command.AlignerType.WaferHold))
                             {
                                 logger.Debug(Node.Name + " 偵測到目標節點未就緒，等待，需求命令:" + Action.EqpType + ":" + Action.Method);
 
-                                SpinWait.SpinUntil(() => Node.Available && Node.JobList.Count == 0, SpinWaitTimeOut);
-
+                                SpinWait.SpinUntil(() => Node.Available && Node.JobList.Count == 0 || _Mode.Equals("Stop"), SpinWaitTimeOut);
+                                if (_Mode.Equals("Stop"))
+                                {
+                                    logger.Debug("離開自動模式");
+                                    return;
+                                }
                                 Node.Available = false;
                                 logger.Debug(Node.Name + " 偵測到目標節點就緒，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
                             }
@@ -1032,6 +1113,50 @@ namespace TransferControl.Engine
                         case "3":
 
                             break;
+                    }
+                    if (Txn.FormName.Equals("StartMode") && Txn.Method.Equals(Transaction.Command.LoadPortType.ReadStatus))
+                    {
+                        MessageParser parser = new MessageParser(Node.Brand);
+                        Dictionary<string, string> content = parser.ParseMessage(Txn.Method, Msg.Value);
+                        bool CheckResult = true;
+                        foreach(KeyValuePair<string,string> each in content)
+                        {
+                            switch (each.Key)
+                            {
+                                case "FOUP Clamp Status":
+                                    if (!each.Value.Equals("Open"))
+                                    {
+                                        CheckResult = false;
+                                    }
+                                    break;
+                                case "Latch Key Status":
+                                    if (!each.Value.Equals("Close"))
+                                    {
+                                        CheckResult = false;
+                                    }
+                                    break;
+                                case "Cassette Presence":
+                                    if (!each.Value.Equals("Normal position"))
+                                    {
+                                        CheckResult = false;
+                                    }
+                                    break;
+                                case "Door Position":
+                                    if (!each.Value.Equals("Close position"))
+                                    {
+                                        CheckResult = false;
+                                    }
+                                    break;
+                            }
+                        }
+                        if (CheckResult)
+                        {
+                            Node.ExcuteScript("LoadPortFoupIn", "LoadPortFoup", true);
+                        }
+                        else
+                        {
+                            Node.ExcuteScript("LoadPortFoupOut", "LoadPortFoup", true);
+                        }
                     }
                 }
                 _EngReport.On_Command_Excuted(Node, Txn, Msg);
@@ -1327,7 +1452,7 @@ namespace TransferControl.Engine
                         case Transaction.Command.LoadPortType.MappingLoad:
                             Node.IsMapping = true;
                             Node.InterLock = false;
-                            
+
                             break;
                         case Transaction.Command.LoadPortType.Unload:
                             _EngReport.On_Node_State_Changed(Node, "Transfer Ready");
@@ -1346,7 +1471,7 @@ namespace TransferControl.Engine
         {
             if (Txn.TargetJobs != null)
             {
-                if (Txn.TargetJobs.Count !=0)
+                if (Txn.TargetJobs.Count != 0)
                 {
                     if (Txn.TargetJobs[0].Job_Id.Equals("dummy"))
                     {
@@ -1528,7 +1653,7 @@ namespace TransferControl.Engine
 
                                         Node.ExcuteScript("LoadPortFoupIn", "LoadPortFoup", true);
                                     }
-                                    _EngReport.On_Node_State_Changed(Node, "Ready To Load");
+                                    _EngReport.On_Node_State_Changed(Node, "Transfer Readey");
 
                                     break;
                                 case "PODOF":
@@ -1536,7 +1661,7 @@ namespace TransferControl.Engine
                                     {
                                         Node.ExcuteScript("LoadPortFoupOut", "LoadPortFoup", true);
                                     }
-                                    _EngReport.On_Node_State_Changed(Node, "Empty");
+                                    _EngReport.On_Node_State_Changed(Node, "Transfer Ready");
 
                                     break;
                             }

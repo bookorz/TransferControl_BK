@@ -78,6 +78,7 @@ namespace TransferControl.Controller
             {
                 logger.Error(_Config.DeviceName + "(ConnectToServer " + _Config.IPAdress + ":" + _Config.Port.ToString() + ")" + e.Message + "\n" + e.StackTrace);
             }
+            
         }
 
         public string DoWorkSync(string Cmd)
@@ -256,14 +257,14 @@ namespace TransferControl.Controller
                             //{
                             lock (Node)
                             {
-
+                                
                                 if (ReturnMsg.Type == ReturnMessage.ReturnType.Event)
                                 {
                                     //_ReportTarget.On_Event_Trigger(Node, ReturnMsg);
                                 }
                                 else if (TransactionList.TryRemove(key, out Txn))
                                 {
-
+                                    Node.InitialComplete = false;
                                     switch (ReturnMsg.Type)
                                     {
                                         case ReturnMessage.ReturnType.Excuted:
@@ -404,6 +405,11 @@ namespace TransferControl.Controller
             if (TransactionList.TryRemove(Txn.AdrNo + Txn.Type, out Txn))
             {
                 Node Node = NodeManagement.GetByController(_Config.DeviceName, Txn.AdrNo);
+                if (Node.State.Equals("Pause"))
+                {
+                    logger.Debug("Txn timeout,but state is pause. ignore this.");
+                    return;
+                }
                 if (Node != null)
                 {
                     _ReportTarget.On_Command_TimeOut(Node, Txn);

@@ -31,42 +31,69 @@ namespace TransferControl.Management
             }
         }
 
+        public static bool IsNeedInitial()
+        {
+            bool result = false;
+            var findNotInit = from node in NodeList.Values.ToList()
+                              where !node.InitialComplete
+                              select node;
+            if (findNotInit.Count() == 0)
+            {
+                result = false;
+            }
+            else
+            {
+                result = true;
+            }
+            return result;
+        }
+
         public static string GetCurrentState()
         {
             string result = "";
             var findAlarm = from node in NodeList.Values.ToList()
-                           where node.State.Equals("Alarm")
-                           select node;
+                            where node.State.Equals("Alarm")
+                            select node;
             if (findAlarm.Count() != 0)
             {
                 result = "Alarm";
             }
             else
             {
-                var findRun = from node in NodeList.Values.ToList()
-                                where node.State.Equals("Run")
-                                select node;
-                if (findRun.Count() != 0)
+                var findPause = from node in NodeList.Values.ToList()
+                              where node.State.Equals("Pause")
+                              select node;
+                if (findPause.Count() != 0)
                 {
-                    result = "Run";
+                    result = "Pause";
                 }
                 else
                 {
-                    var findIdle = from node in NodeList.Values.ToList()
-                                  where node.State.Equals("Idle")
+                    var findRun = from node in NodeList.Values.ToList()
+                                  where node.State.Equals("Run")
                                   select node;
-                    if (findIdle.Count() != 0)
+                    if (findRun.Count() != 0)
                     {
-                        result = "Idle";
+                        result = "Run";
                     }
                     else
                     {
-                        var findDown = from node in NodeList.Values.ToList()
-                                       where node.State.Equals("Down")
+                        var findIdle = from node in NodeList.Values.ToList()
+                                       where node.State.Equals("Idle")
                                        select node;
-                        if (findDown.Count() != 0)
+                        if (findIdle.Count() != 0)
                         {
-                            result = "Down";
+                            result = "Idle";
+                        }
+                        else
+                        {
+                            var findDown = from node in NodeList.Values.ToList()
+                                           where node.State.Equals("Down")
+                                           select node;
+                            if (findDown.Count() != 0)
+                            {
+                                result = "Down";
+                            }
                         }
                     }
                 }
@@ -79,8 +106,8 @@ namespace TransferControl.Management
             List<Node> result = new List<Node>();
 
             var findPort = from port in NodeList.Values.ToList()
-                            where port.Type.Equals("LoadPort")
-                            select port;
+                           where port.Type.Equals("LoadPort")
+                           select port;
 
             if (findPort.Count() != 0)
             {

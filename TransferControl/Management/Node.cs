@@ -62,7 +62,7 @@ namespace TransferControl.Management
             public string Point { get; set; }
         }
 
-        public void Initial()
+        public void InitialObject()
         {
             JobList = new ConcurrentDictionary<string, Job>();
             ReserveList = new ConcurrentDictionary<string, Job>();
@@ -147,7 +147,7 @@ namespace TransferControl.Management
         public bool SendCommand(Transaction txn, bool Force = false)
         {
             //var watch = System.Diagnostics.Stopwatch.StartNew();
-
+            
 
             bool result = false;
             try
@@ -546,6 +546,7 @@ namespace TransferControl.Management
                 }
                 if (txn.CommandType.Equals("CMD") || txn.CommandType.Equals("MOV"))
                 {
+                    
                     if ((this.InterLock || !(this.UnLockByJob.Equals(TargetJob.Job_Id) || this.UnLockByJob.Equals(""))) && !Force)
                     {
                         ReturnMessage tmp = new ReturnMessage();
