@@ -22,5 +22,6 @@ namespace TransferControl.Engine
         void On_Job_Location_Changed(Job Job);
         void On_Script_Finished(Node Node, string ScriptName,string FormName);
         void On_InterLock_Report(Node Node, bool InterLock);
+        void On_Mode_Changed(string Mode);
     }
 }

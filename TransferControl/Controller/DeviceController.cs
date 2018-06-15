@@ -87,12 +87,12 @@ namespace TransferControl.Controller
 
         }
 
-        public string DoWorkSync(string Cmd)
+        public string DoWorkSync(string Cmd,int Timeout = 30000)
         {
             string result = "";
             WaitingForSync = true;
             conn.Send(Cmd);
-            SpinWait.SpinUntil(() => !WaitingForSync, 30000);
+            SpinWait.SpinUntil(() => !WaitingForSync, Timeout);
             if (WaitingForSync)
             {
                 result = "Command time out!";
@@ -181,7 +181,13 @@ namespace TransferControl.Controller
                 {
                     if (WaitingForSync)
                     {
-                        if (ReturnTypeForSync.Equals("CMD"))
+                        if (ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Error))
+                        {
+                            ReturnForSync = Msg;
+                            WaitingForSync = false;
+                            return;
+                        }
+                        else if (ReturnTypeForSync.Equals("CMD"))
                         {
                             if (ReturnMsg.Type.Equals(ReturnMessage.ReturnType.Finished))
                             {

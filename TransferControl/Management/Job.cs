@@ -10,6 +10,7 @@ namespace TransferControl.Management
     {
         public string Slot { get; set; }
         public string Job_Id { get; set; }
+        public string Host_Job_Id { get; set; }
         public bool ProcessFlag { get; set; }
         public int Piority { get; set; }
         public bool AlignerFlag { get; set; }

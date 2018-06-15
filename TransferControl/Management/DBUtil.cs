@@ -1,10 +1,12 @@
 ﻿using MySql.Data.MySqlClient;
+using SANWA.Utility.Config;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TransferControl.Engine;
 
 namespace TransferControl.Management
 {
@@ -14,8 +16,8 @@ namespace TransferControl.Management
 
         private void open_Conn()
         {
-            //string connectionStr = "server=192.168.5.127;user id=sanwa;password=sanwa_adam;database=adam";
-            string connectionStr = "server=127.0.0.1;port=3306;user id=sanwa;password=sanwa_adam;database=adam";
+            string connectionStr = SystemConfig.Get().DBConnectionString; ;
+            //string connectionStr = "server=127.0.0.1;port=3306;user id=sanwa;password=sanwa_adam;database=adam";
             Connection_ = new MySqlConnection(connectionStr);
             Connection_.Open();
             //MessageBox.Show("Connect OK!");

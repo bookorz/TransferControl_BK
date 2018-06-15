@@ -24,15 +24,14 @@ namespace TransferControl.Engine
         public bool IsInitial = false;
         DateTime StartTime = new DateTime();
         IEngineReport _EngReport;
-        public static SystemConfig SysConfig;
+        
 
         public int SpinWaitTimeOut = 99999000;
 
         public RouteControl(IEngineReport ReportTarget)
         {
             _EngReport = ReportTarget;
-            ConfigTool<SystemConfig> SysCfg = new ConfigTool<SystemConfig>();
-            SysConfig = SysCfg.ReadFile("config/SystemConfig.json");
+           
 
             ConfigTool<DeviceConfig> DeviceCfg = new ConfigTool<DeviceConfig>();
             foreach (DeviceConfig eachDevice in DeviceCfg.ReadFileByList("config/Controller/Controllers.json"))
@@ -131,6 +130,7 @@ namespace TransferControl.Engine
             lock (this)
             {
                 _Mode = "Stop";
+                _EngReport.On_Mode_Changed("Stop");
                 IsInitial = false;
             }
 
@@ -151,6 +151,7 @@ namespace TransferControl.Engine
                 else
                 {
                     _Mode = "Start";
+                    _EngReport.On_Mode_Changed("Start");
                     ControllerManagement.ClearTransactionList();
                     //檢查各狀態
                     foreach (Node port in NodeManagement.GetLoadPortList())
@@ -1131,10 +1132,12 @@ namespace TransferControl.Engine
 
                                     break;
                             }
-                            
+
                         }
                         break;
                     case "Aligner":
+                    case "OCR":
+                        
                         if (_Mode.Equals("Start"))
                         {
                             //TargetJob = Txn.TargetJobs[0];
@@ -1347,6 +1350,18 @@ namespace TransferControl.Engine
                     case "Aligner":
                     case "OCR":
                         UpdateNodeStatus(Node, Txn);
+                        if (Node.Type.Equals("OCR"))
+                        {
+                            //Update Wafer ID by OCR result
+                            if (Txn.Method.Equals(Transaction.Command.OCRType.Read))
+                            {
+                                if (Txn.TargetJobs.Count != 0)
+                                {
+                                    Txn.TargetJobs[0].Host_Job_Id = Msg.Value.Replace("[", "").Replace("]", "").Split(',')[0];
+                                    _EngReport.On_Job_Location_Changed(Txn.TargetJobs[0]);
+                                }
+                            }
+                        }
                         if (_Mode.Equals("Start"))
                         {
                             //TargetJob = Txn.TargetJobs[0];
@@ -1406,9 +1421,26 @@ namespace TransferControl.Engine
                                 break;
                             }
                         }
+                        else
+                        {
+                            
+                        }
                         break;
                     case "LoadPort":
                         UpdateNodeStatus(Node, Txn);
+                        switch (Txn.Method)
+                        {
+                            case Transaction.Command.LoadPortType.Unload:
+                            case Transaction.Command.LoadPortType.MappingUnload:
+                            case Transaction.Command.LoadPortType.UnDock:
+
+                                _EngReport.On_Node_State_Changed(Node, "UnLoad Complete");
+                                break;
+                            case Transaction.Command.LoadPortType.InitialPos:
+                            case Transaction.Command.LoadPortType.ForceInitialPos:
+                                _EngReport.On_Node_State_Changed(Node, "Ready To Load");
+                                break;
+                        }
                         break;
                 }
             }
@@ -1542,10 +1574,10 @@ namespace TransferControl.Engine
                         case Transaction.Command.LoadPortType.MappingLoad:
                             Node.IsMapping = true;
                             Node.InterLock = false;
-
+                            _EngReport.On_Node_State_Changed(Node, "Load Complete");
                             break;
                         case Transaction.Command.LoadPortType.Unload:
-                            _EngReport.On_Node_State_Changed(Node, "Transfer Ready");
+                            _EngReport.On_Node_State_Changed(Node, "UnLoad Complete");
                             break;
                         default:
                             Node.InterLock = true;
@@ -1580,10 +1612,11 @@ namespace TransferControl.Engine
                                 Node TargetNode5 = NodeManagement.Get(Txn.TargetJobs[i].Position);
                                 Job tmp;
                                 TargetNode5.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
-                                if (Node.Type.Equals("LoadPort"))
+                                if (TargetNode5.Type.Equals("LoadPort"))
                                 {
                                     tmp = new Job();
                                     tmp.Job_Id = "No wafer";
+                                    tmp.Host_Job_Id = "No wafer";
                                     tmp.Slot = Txn.TargetJobs[i].Slot;
                                     TargetNode5.JobList.TryAdd(Txn.TargetJobs[i].Slot, tmp);
                                 }
@@ -1631,10 +1664,11 @@ namespace TransferControl.Engine
                                 Node TargetNode4 = NodeManagement.Get(Txn.TargetJobs[i].Position);
                                 Job tmp;
                                 TargetNode4.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
-                                if (Node.Type.Equals("LoadPort"))
+                                if (TargetNode4.Type.Equals("LoadPort"))
                                 {
                                     tmp = new Job();
                                     tmp.Job_Id = "No wafer";
+                                    tmp.Host_Job_Id = "No wafer";
                                     tmp.Slot = Txn.TargetJobs[i].Slot;
                                     TargetNode4.JobList.TryAdd(Txn.TargetJobs[i].Slot, tmp);
                                 }
@@ -1714,6 +1748,10 @@ namespace TransferControl.Engine
         public void On_Command_TimeOut(Node Node, Transaction Txn)
         {
             logger.Debug("Transaction TimeOut:" + Txn.CommandEncodeStr);
+            if (!Node.LastState.Equals("Alarm"))
+            {
+                Node.LastState = Node.State;
+            }
             Node.State = "Alarm";
             _EngReport.On_Command_TimeOut(Node, Txn);
         }
@@ -1725,8 +1763,13 @@ namespace TransferControl.Engine
                 logger.Debug("On_Event_Trigger");
                 if (Msg.Command.Equals("ERROR"))
                 {
+                    if (!Node.LastState.Equals("Alarm"))
+                    {
+                        Node.LastState = Node.State;
+                    }
                     Node.State = "Alarm";
                     _EngReport.On_Command_Error(Node, new Transaction(), Msg);
+                    _EngReport.On_Node_State_Changed(Node, "Alarm");
                 }
                 else
                 {
@@ -1740,7 +1783,7 @@ namespace TransferControl.Engine
                                     if (this.GetMode().Equals("Start"))
                                     {
                                         Node.ExcuteScript("LoadPortMapping", "MANSW", true);
-                                        _EngReport.On_Node_State_Changed(Node, "Transfer Blocked");
+                                        //_EngReport.On_Node_State_Changed(Node, "Transfer Blocked");
                                     }
                                     break;
                                 case "PODON":
@@ -1749,7 +1792,7 @@ namespace TransferControl.Engine
 
                                         Node.ExcuteScript("LoadPortFoupIn", "LoadPortFoup", true);
                                     }
-                                    _EngReport.On_Node_State_Changed(Node, "Transfer Readey");
+                                    //_EngReport.On_Node_State_Changed(Node, "Transfer Readey");
 
                                     break;
                                 case "PODOF":
@@ -1757,7 +1800,7 @@ namespace TransferControl.Engine
                                     {
                                         Node.ExcuteScript("LoadPortFoupOut", "LoadPortFoup", true);
                                     }
-                                    _EngReport.On_Node_State_Changed(Node, "Transfer Ready");
+                                    _EngReport.On_Node_State_Changed(Node, "Ready To Load");
 
                                     break;
                             }
@@ -1785,12 +1828,20 @@ namespace TransferControl.Engine
 
         public void On_Node_State_Changed(Node Node, string Status)
         {
+            if (!Node.LastState.Equals("Alarm") && Status.Equals("Alarm"))
+            {
+                Node.LastState = Node.State;
+            }
             Node.State = Status;
             _EngReport.On_Node_State_Changed(Node, Status);
         }
 
         public void On_Command_Error(Node Node, Transaction Txn, ReturnMessage Msg)
         {
+            if (!Node.LastState.Equals("Alarm"))
+            {
+                Node.LastState = Node.State;
+            }
             Node.State = "Alarm";
             _EngReport.On_Command_Error(Node, Txn, Msg);
             _EngReport.On_Node_State_Changed(Node, "Alarm");

@@ -36,6 +36,7 @@ namespace TransferControl.Management
         public bool GetMutex { get; set; }
         public bool InterLock { get; set; }
         public string State { get; set; }
+        public string LastState { get; set; }
         public string StatusInfo { get; set; }
         public string Mode { get; set; }
         public bool Reserve { get; set; }
@@ -77,7 +78,11 @@ namespace TransferControl.Management
             CurrentPosition = "";
             PutOutArm = "";
             UnLockByJob = "";
-            State = "";
+            State = "Idle";
+            if (Type.Equals("LoadPort")) {
+                State = "Ready To Load";
+            }
+            LastState = "";
             StatusInfo = "";
             PutOut = false;
             PutAvailable = true;
@@ -97,7 +102,7 @@ namespace TransferControl.Management
             Fetchable = false;
             LoadTime = new DateTime();
 
-        }
+        } 
 
         public void ExcuteScript(string ScriptName, string FormName, bool Force = false)
         {
