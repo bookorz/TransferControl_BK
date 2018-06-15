@@ -87,10 +87,11 @@ namespace TransferControl.Controller
 
         }
 
-        public string DoWorkSync(string Cmd,int Timeout = 30000)
+        public string DoWorkSync(string Cmd,string Type,int Timeout = 30000)
         {
             string result = "";
             WaitingForSync = true;
+            ReturnTypeForSync = Type;
             conn.Send(Cmd);
             SpinWait.SpinUntil(() => !WaitingForSync, Timeout);
             if (WaitingForSync)
