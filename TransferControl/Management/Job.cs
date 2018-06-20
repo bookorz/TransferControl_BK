@@ -28,6 +28,7 @@ namespace TransferControl.Management
         public string FetchRobot { get; set; }
         public string ProcessNode { get; set; }
         public bool MapFlag { get; set; }
+        public int Offset { get; set; }
 
         public Job()
         {

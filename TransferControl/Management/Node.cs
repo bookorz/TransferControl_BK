@@ -61,6 +61,7 @@ namespace TransferControl.Management
             public string NodeName { get; set; }
             public string NodeType { get; set; }
             public string Point { get; set; }
+            public int Offset { get; set; }
         }
 
         public void InitialObject()
@@ -198,14 +199,17 @@ namespace TransferControl.Management
                         }
                     }
                 }
-                foreach (Route each in RouteTable)
+
+                var findRoute = from rt in RouteTable
+                                where rt.NodeName.Equals(txn.Position)
+                               select rt;
+                if (findRoute.Count() != 0)
                 {
-                    if (txn.Position.Equals(each.NodeName))
-                    {
-                        txn.Point = each.Point;
-                        break;
-                    }
+                    Route t = findRoute.First();
+                    txn.Point = t.Point;
+
                 }
+
                 switch (this.Type)
                 {
                     case "LoadPort":

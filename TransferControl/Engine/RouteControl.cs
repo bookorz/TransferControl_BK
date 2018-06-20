@@ -963,8 +963,47 @@ namespace TransferControl.Engine
                                 }
                             }
                         }
+                        if (Action.Param.ToUpper().Equals("BYSETTING"))
+                        {
+                            Node NextRobot = NodeManagement.GetNextRobot(Node, TargetJob);
+                            if(NextRobot != null)
+                            {
+                                
+                                var findRt = from rt in NextRobot.RouteTable
+                                             where rt.NodeName.Equals(Node.Name)
+                                               select rt;
+                                if (findRt.Count() != 0)
+                                {
+                                    TargetJob.Offset = findRt.First().Offset;//Get aligner offset
+                                   
+                                    findRt = from rt in NextRobot.RouteTable
+                                             where rt.NodeName.Equals(TargetJob.Destination)
+                                             select rt;
+                                    if (findRt.Count() != 0)
+                                    {
+                                        TargetJob.Offset += findRt.First().Offset; //Get UnloadPort offset
+                                    }
+                                    else
+                                    {
+                                        logger.Debug("Try to get Unload Port angle offset fail: " + TargetJob.Destination + " not found from " + NextRobot.Name + "'s route table.");
+                                    }
+                                }
+                                else
+                                {
+                                    logger.Debug("Try to get Align angle offset fail: "+ Node.Name + " not found from "+ NextRobot.Name+ "'s route table.");
+                                }
 
-                        txn.Value = Action.Param;
+                            }
+                            else
+                            {
+                                logger.Debug("Try to get Align angle offset fail: NextRobot not found.");
+                            }
+
+                        }
+                        else
+                        {
+                            txn.Value = Action.Param;
+                        }
                         Node.SendCommand(txn);
                         break;
                     case "OCR":
