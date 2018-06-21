@@ -16,6 +16,7 @@ namespace TransferControl.Management
         public string EngDesc { get; set; }
         public string Type { get; set; }
         public bool IsStop { get; set; }
+        public bool NeedReset { get; set; }
         public string TimeStamp { get; set; }
         public AlarmInfo()
         {
@@ -27,6 +28,7 @@ namespace TransferControl.Management
             EngDesc = "";
             Type = "";
             IsStop = false;
+            NeedReset = false;
             TimeStamp = "";
         }
     }

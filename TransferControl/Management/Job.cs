@@ -29,6 +29,7 @@ namespace TransferControl.Management
         public string ProcessNode { get; set; }
         public bool MapFlag { get; set; }
         public int Offset { get; set; }
+        public int Angle { get; set; }
 
         public Job()
         {
@@ -38,6 +39,9 @@ namespace TransferControl.Management
             DestinationSlot = "";
             ProcessFlag = true;
             MapFlag = false;
+            Angle = 270;
+            AlignerFlag = true;
+            OCRFlag = true;
         }
 
         public class State

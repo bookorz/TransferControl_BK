@@ -5,8 +5,6 @@ using TransferControl.Config;
 using TransferControl.Controller;
 
 using TransferControl.Management;
-
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -963,6 +961,10 @@ namespace TransferControl.Engine
                                 }
                             }
                         }
+                        if (Action.Param == null)
+                        {
+                            Action.Param = "";
+                        }
                         if (Action.Param.ToUpper().Equals("BYSETTING"))
                         {
                             Node NextRobot = NodeManagement.GetNextRobot(Node, TargetJob);
@@ -982,6 +984,8 @@ namespace TransferControl.Engine
                                     if (findRt.Count() != 0)
                                     {
                                         TargetJob.Offset += findRt.First().Offset; //Get UnloadPort offset
+                                        TargetJob.Offset += TargetJob.Angle;
+                                        txn.Value = TargetJob.Offset.ToString();
                                     }
                                     else
                                     {

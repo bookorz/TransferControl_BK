@@ -38,7 +38,10 @@ namespace TransferControl.Management
         {
             foreach (DeviceController each in Controllers.Values.ToList())
             {
-                each.Connect();
+                if (!each._Config.DeviceType.Equals("HST"))
+                {
+                    each.Connect();
+                }
             }
         }
 
