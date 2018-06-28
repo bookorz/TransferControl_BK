@@ -247,7 +247,7 @@ namespace TransferControl.Engine
                     {//當沒有Port正在作業時，指定Load的時間最早的Port可以開始取片
 
                         findPort = from port in PortList
-                                   where port.Available
+                                   where port.Available && (port.Mode.Equals("LD") || port.Mode.Equals("LU"))
                                    select port;
                         if (findPort.Count() == 0)
                         {
@@ -1162,6 +1162,18 @@ namespace TransferControl.Engine
             try
             {
                 logger.Debug("On_Command_Excuted");
+                if (Txn.Method.Equals(Transaction.Command.RobotType.Reset))
+                {
+                    if (Node.LastState.Equals(""))
+                    {
+                        Node.State = "Idle";
+                    }
+                    else
+                    {
+                        Node.State = Node.LastState;
+                    }
+                    _EngReport.On_Node_State_Changed(Node, Node.State);
+                }
                 Job TargetJob = null;
                 if (Txn.TargetJobs.Count != 0)
                 {

@@ -75,3 +75,5 @@ C:\軟體專案開發\team\TransferControl\TransferControl\obj\Debug\TransferCon
 C:\軟體專案開發\team\TransferControl\TransferControl\obj\Debug\TransferControl.dll
 C:\軟體專案開發\team\TransferControl\TransferControl\obj\Debug\TransferControl.pdb
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\MySql.Data.dll
+C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\Dapper.dll
+C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\Dapper.xml
