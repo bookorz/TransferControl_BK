@@ -18,7 +18,9 @@ namespace TransferControl.Engine
         void On_Event_Trigger(Node Node, ReturnMessage Msg);
         void On_Node_State_Changed(Node Node, string Status);
         void On_Controller_State_Changed(string Device_ID, string Status);
-        void On_Port_Finished(string PortName);
+        void On_Port_Begin(string PortName, string FormName);
+        void On_Port_Finished(string PortName,string FormName);
+        void On_Task_Finished(string FormName,string LapsedTime,int LapsedWfCount,int LapsedLotCount);
         void On_Job_Location_Changed(Job Job);
         void On_Script_Finished(Node Node, string ScriptName,string FormName);
         void On_InterLock_Report(Node Node, bool InterLock);

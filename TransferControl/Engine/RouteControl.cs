@@ -22,14 +22,17 @@ namespace TransferControl.Engine
         public bool IsInitial = false;
         DateTime StartTime = new DateTime();
         IEngineReport _EngReport;
-        
+        int LapsedWfCount = 0;
+        int LapsedLotCount = 0;
 
         public int SpinWaitTimeOut = 99999000;
 
+
         public RouteControl(IEngineReport ReportTarget)
         {
+            _Mode = "Stop";
             _EngReport = ReportTarget;
-           
+
 
             ConfigTool<DeviceConfig> DeviceCfg = new ConfigTool<DeviceConfig>();
             foreach (DeviceConfig eachDevice in DeviceCfg.ReadFileByList("config/Controller/Controllers.json"))
@@ -46,6 +49,11 @@ namespace TransferControl.Engine
 
             foreach (Node eachNode in NodeCfg.ReadFileByList("config/Node/Nodes.json"))
             {
+                if (!eachNode.Enable)
+                {
+                    continue;
+                }
+
                 eachNode.InitialObject();
                 NodeManagement.Add(eachNode.Name, eachNode);
 
@@ -123,65 +131,90 @@ namespace TransferControl.Engine
             }
         }
 
+
+
         public void Stop()
         {
             lock (this)
             {
+
                 _Mode = "Stop";
-                _EngReport.On_Mode_Changed("Stop");
+
                 IsInitial = false;
+                foreach (Node port in NodeManagement.GetLoadPortList())
+                {
+                    port.Available = false;
+                    port.Fetchable = false;
+                    port.ReserveList.Clear();
+                    foreach (Job j in port.JobList.Values.ToList())
+                    {
+                        j.Destination = "";
+                        j.DestinationSlot = "";
+                        j.DisplayDestination = "";
+                    }
+                    _EngReport.On_Mode_Changed("Stop");
+                }
             }
 
         }
 
-        public void Start(object ScriptName)
+        public void Start(string FormName)
         {
             lock (this)
             {
-                if (_Mode == "Start")
+                if (_Mode != "Stop")
                 {
                     throw new Exception("目前已在Start模式");
                 }
-                //else if (NodeManagement.IsNeedInitial())
-                //{
-                //    throw new Exception("請先執行initial");
-                //}
+
                 else
                 {
                     _Mode = "Start";
-                    _EngReport.On_Mode_Changed("Start");
+
                     ControllerManagement.ClearTransactionList();
                     //檢查各狀態
                     foreach (Node port in NodeManagement.GetLoadPortList())
                     {
                         Transaction txn = new Transaction();
                         txn.Method = Transaction.Command.LoadPortType.ReadStatus;
-                        txn.FormName = "StartMode";
+                        txn.FormName = FormName;
                         port.SendCommand(txn);
+                        port.Available = false;
+                        port.Fetchable = false;
+                        port.ReserveList.Clear();
+                        foreach (Job j in port.JobList.Values.ToList())
+                        {
+                            j.Destination = "";
+                            j.DestinationSlot = "";
+                            j.DisplayDestination = "";
+                        }
+                        _EngReport.On_Mode_Changed("Start");
                     }
                 }
             }
-            while (_Mode.Equals("Start"))
+            ThreadPool.QueueUserWorkItem(new WaitCallback(StartMonitor), FormName);
+        }
+
+        private void StartMonitor(object FormName)
+        {
+            foreach (Node each in NodeManagement.GetLoadPortList())
             {
-
-
-                StartTime = DateTime.Now;
+                each.Available = false;
+            }
+            while (!_Mode.Equals("Stop"))
+            {
                 while (true)
                 {
-                    foreach (Node each in NodeManagement.GetLoadPortList())
-                    {
-                        each.Available = false;
-                    }
 
                     logger.Debug("等待可用Foup中");
                     SpinWait.SpinUntil(() => (from LD in NodeManagement.GetLoadPortList()
-                                              where LD.Available == true && LD.Mode.Equals("LD")
+                                              where LD.Available == true && (LD.Mode.Equals("LD") || LD.Mode.Equals("LU"))
                                               select LD).Count() != 0 || _Mode.Equals("Stop"), SpinWaitTimeOut);
                     if ((from LD in NodeManagement.GetLoadPortList()
                          where LD.Available == true
                          select LD).Count() != 0 || _Mode.Equals("Stop"))
                     {
-                        if (!_Mode.Equals("Start"))
+                        if (_Mode.Equals("Stop"))
                         {
                             logger.Debug("結束Start模式");
                             return;
@@ -220,7 +253,7 @@ namespace TransferControl.Engine
                         {
 
 
-                            if (!_Mode.Equals("Start"))
+                            if (_Mode.Equals("Stop"))
                             {
                                 return;
                             }
@@ -235,7 +268,13 @@ namespace TransferControl.Engine
                             tmp.Sort((x, y) => { return x.LoadTime.CompareTo(y.LoadTime); });
 
                             tmp[0].Fetchable = true;
+                            tmp[0].Used = true;
+                            _EngReport.On_Port_Begin(tmp[0].Name, FormName.ToString());
                             logger.Debug(robot.Name + ":指定 " + tmp[0].Name + " 開始取片");
+                            LapsedLotCount++;
+                            LapsedWfCount += (from jb in tmp[0].JobList.Values
+                                              where jb.MapFlag && !jb.ProcessFlag
+                                              select jb).Count();
                         }
                         else
                         {
@@ -247,11 +286,17 @@ namespace TransferControl.Engine
                         }
                     }
 
-                    RobotFetchMode(robot, ScriptName.ToString());
+                    RobotFetchMode(robot, "Normal", FormName.ToString());
                 }
                 logger.Debug("等待搬運週期完成");
+                StartTime = DateTime.Now;
                 SpinWait.SpinUntil(() => CheckCycle() || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待搬運週期完成
+                TimeSpan diff = DateTime.Now - StartTime;
+                logger.Info("Process Time: " + diff.TotalSeconds);
+                _EngReport.On_Task_Finished(FormName.ToString(), diff.TotalSeconds.ToString(), LapsedWfCount, LapsedLotCount);
                 logger.Debug("搬運週期完成，下個周期開始");
+                LapsedWfCount = 0;
+                LapsedLotCount = 0;
             }
             logger.Debug("結束Start模式");
         }
@@ -260,17 +305,17 @@ namespace TransferControl.Engine
         {
 
 
-            bool a = (from rbt in NodeManagement.GetEnableRobotList()
-                      where rbt.Phase.Equals("1")
-                      select rbt).Count() == 0;
-            bool b = (from jb in JobManagement.GetJobList()
-                      where jb.Position.Equals("Robot01") || jb.Position.Equals("Robot02") || jb.Position.Equals("Aligner01") || jb.Position.Equals("Aligner02")
-                      select jb).Count() == 0;
+            //bool a = (from jb in JobManagement.GetJobList()
+            //          where jb.Position.IndexOf("LoadPort") != -1 && jb.MapFlag && !jb.ProcessFlag && !
+            //          select jb).Count() == 0;
+            bool b = (from port in NodeManagement.GetLoadPortList()
+                      where port.Used
+                      select port).Count() == 0;
             bool c = (from port in NodeManagement.GetLoadPortList()
                       where port.Available == true && port.Fetchable == true
                       select port).Count() == 0;
 
-            return a && b && c;
+            return b & c;
         }
 
         private bool CheckPresent(Node Node)
@@ -293,7 +338,7 @@ namespace TransferControl.Engine
             return result;
         }
 
-        private void RobotFetchMode(Node RobotNode, string ScriptName)
+        private void RobotFetchMode(Node RobotNode, string ScriptName, string FormName)
         {
             RobotNode.Phase = "1";
             RobotNode.GetAvailable = false;
@@ -342,7 +387,7 @@ namespace TransferControl.Engine
                         }
                         List<Job> JobsSortBySlot = PortNode.JobList.Values.ToList();
                         var findJob = from Job in JobsSortBySlot
-                                      where Job.ProcessFlag == false
+                                      where Job.ProcessFlag == false && Job.MapFlag
                                       select Job;
 
                         if (findJob.Count() == 0)
@@ -353,10 +398,10 @@ namespace TransferControl.Engine
                             RobotNode.Phase = "2";
                             RobotNode.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
                             RobotNode.Release = true;
-                            TimeSpan diff = DateTime.Now - StartTime;
-                            logger.Info("Process Time: " + diff.TotalSeconds);
+
                             _EngReport.On_Node_State_Changed(PortNode, "Ready To UnLoad");
-                            _EngReport.On_Port_Finished(PortNode.Name);
+
+                            _EngReport.On_Port_Finished(PortNode.Name, FormName);
 
                         }
                         else
@@ -376,7 +421,7 @@ namespace TransferControl.Engine
                                         //找到第一片
                                         eachJob.FetchRobot = RobotNode.Name;
 
-                                        NodeManagement.GetReservAligner(eachJob.FromPort).UnLockByJob = eachJob.Job_Id;
+                                        NodeManagement.Get(RobotNode.DefaultAligner).UnLockByJob = eachJob.Job_Id;
                                     }
                                     else
                                     {
@@ -410,6 +455,7 @@ namespace TransferControl.Engine
                                     txn.Method = Transaction.Command.RobotType.DoubleGet;
                                     txn.Arm = "";
                                     txn.ScriptName = ScriptName;
+                                    txn.FormName = FormName;
                                     if (RobotNode.SendCommand(txn))
                                     {
                                         Node NextRobot = NodeManagement.GetNextRobot(TargetJobs[0].Destination);
@@ -430,6 +476,7 @@ namespace TransferControl.Engine
                                     txn.Method = Transaction.Command.RobotType.Get;
                                     txn.Arm = "1";
                                     txn.ScriptName = ScriptName;
+                                    txn.FormName = FormName;
                                     if (RobotNode.SendCommand(txn))
                                     {
                                         Node NextRobot = NodeManagement.GetNextRobot(TargetJobs[0].Destination);
@@ -461,7 +508,7 @@ namespace TransferControl.Engine
                     JobsSortBySlot = PortNode.JobList.Values.ToList();
                 }
                 var findJob = from Job in JobsSortBySlot
-                              where Job.ProcessFlag == false
+                              where Job.ProcessFlag == false && Job.MapFlag
                               select Job;
                 JobsSortBySlot = findJob.ToList();
                 JobsSortBySlot.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
@@ -488,6 +535,7 @@ namespace TransferControl.Engine
                     txn.Method = Transaction.Command.RobotType.Get;
                     txn.Arm = "2";
                     txn.ScriptName = ScriptName;
+                    txn.FormName = FormName;
                     if (RobotNode.SendCommand(txn))
                     {
                         Node NextRobot = NodeManagement.GetNextRobot(TargetJobs[0].Destination);
@@ -505,7 +553,7 @@ namespace TransferControl.Engine
                     {
                         eachJob.CurrentState = Job.State.WAIT_PUT;
                     }
-                    FindNextJob(RobotNode, ScriptName);
+                    FindNextJob(RobotNode, ScriptName, FormName);
                 }
 
 
@@ -514,13 +562,13 @@ namespace TransferControl.Engine
             {
                 RobotNode.Phase = "2";//進入處理階段
 
-                FindNextJob(RobotNode, ScriptName);
+                FindNextJob(RobotNode, ScriptName, FormName);
             }
 
         }
 
 
-        private void FindNextJob(Node RobotNode, string ScriptName)
+        private void FindNextJob(Node RobotNode, string ScriptName, string FormName)
         {
 
             var find = from job in RobotNode.JobList.Values.ToList()
@@ -546,13 +594,13 @@ namespace TransferControl.Engine
                     if (lastProcessNode.Equals(""))
                     {
 
-                        each.ProcessNode = NodeManagement.GetReservAligner(each.FromPort).Name;
+                        each.ProcessNode = NodeManagement.Get(RobotNode.DefaultAligner).Name;
                         lastProcessNode = each.ProcessNode;
                     }
                     else
                     {
                         //each.ProcessNode = NodeManagement.GetAnotherAligner(lastProcessNode).Name;
-                        each.ProcessNode = NodeManagement.GetReservAligner(each.FromPort).Name;
+                        each.ProcessNode = NodeManagement.Get(RobotNode.DefaultAligner).Name;
                     }
                     List<Job> TargetJobs = new List<Job>();
                     TargetJobs.Add(each);
@@ -564,7 +612,7 @@ namespace TransferControl.Engine
                             foreach (Path.Action eachAction in eachPath.TodoList)
                             {
 
-                                TodoAction(ScriptName, eachAction, TargetJobs, RobotNode);
+                                TodoAction(ScriptName, eachAction, TargetJobs, RobotNode, FormName);
                             }
                             break;
                         }
@@ -592,7 +640,8 @@ namespace TransferControl.Engine
                     result = NodeManagement.Get(Job.Position);
                     break;
                 case "ReserveAligner":
-                    result = NodeManagement.GetReservAligner(Job.FromPort);
+
+                    result = NodeManagement.Get(Node.DefaultAligner);
                     break;
                 case "Aligner":
                     logger.Debug("Node.CurrentPosition:" + Node.CurrentPosition);
@@ -615,7 +664,15 @@ namespace TransferControl.Engine
                     }
                     break;
                 case "NextRobot":
-                    Node Target = NodeManagement.GetReservAligner(Job.FromPort);
+                    Node Target;
+                    if (Node.Type.Equals("Robot"))
+                    {
+                        Target = NodeManagement.Get(Node.DefaultAligner);
+                    }
+                    else
+                    {
+                        Target = Node;
+                    }
                     if (Target == null)
                     {
                         logger.Debug("(GetPosNode) Target not found.");
@@ -686,7 +743,7 @@ namespace TransferControl.Engine
             }
         }
 
-        private void TodoAction(string ScriptName, Path.Action Action, List<Job> TargetJobs, Node FinNode)
+        private void TodoAction(string ScriptName, Path.Action Action, List<Job> TargetJobs, Node FinNode, string FormName)
         {
             try
             {
@@ -703,6 +760,7 @@ namespace TransferControl.Engine
 
 
                 Transaction txn = new Transaction();
+                txn.FormName = FormName;
                 txn.ScriptName = ScriptName;
                 Node Target = null;
                 if (!Action.Position.Equals(""))
@@ -968,16 +1026,16 @@ namespace TransferControl.Engine
                         if (Action.Param.ToUpper().Equals("BYSETTING"))
                         {
                             Node NextRobot = NodeManagement.GetNextRobot(Node, TargetJob);
-                            if(NextRobot != null)
+                            if (NextRobot != null)
                             {
-                                
+
                                 var findRt = from rt in NextRobot.RouteTable
                                              where rt.NodeName.Equals(Node.Name)
-                                               select rt;
+                                             select rt;
                                 if (findRt.Count() != 0)
                                 {
                                     TargetJob.Offset = findRt.First().Offset;//Get aligner offset
-                                   
+
                                     findRt = from rt in NextRobot.RouteTable
                                              where rt.NodeName.Equals(TargetJob.Destination)
                                              select rt;
@@ -994,7 +1052,7 @@ namespace TransferControl.Engine
                                 }
                                 else
                                 {
-                                    logger.Debug("Try to get Align angle offset fail: "+ Node.Name + " not found from "+ NextRobot.Name+ "'s route table.");
+                                    logger.Debug("Try to get Align angle offset fail: " + Node.Name + " not found from " + NextRobot.Name + "'s route table.");
                                 }
 
                             }
@@ -1025,7 +1083,7 @@ namespace TransferControl.Engine
 
         }
 
-        private void RobotPutMode(Node RobotNode, string ScriptName)
+        private void RobotPutMode(Node RobotNode, string ScriptName, string FormName)
         {
             Job Wafer;
             List<Job> TargetJobs = new List<Job>();
@@ -1033,7 +1091,7 @@ namespace TransferControl.Engine
             {
 
                 RobotNode.Phase = "1";//進入取片階段
-                RobotFetchMode(RobotNode, ScriptName);
+                RobotFetchMode(RobotNode, ScriptName, FormName);
             }
             else if (RobotNode.JobList.Count == 1)//單臂有片
             {
@@ -1048,6 +1106,7 @@ namespace TransferControl.Engine
                 txn.Method = Transaction.Command.RobotType.Put;
                 txn.Arm = Wafer.Slot;
                 txn.ScriptName = ScriptName;
+                txn.FormName = FormName;
                 RobotNode.SendCommand(txn);
             }
             else if (RobotNode.JobList.Count == 2)//雙臂有片
@@ -1056,8 +1115,12 @@ namespace TransferControl.Engine
                 Jobs.Sort((x, y) => { return Convert.ToInt16(x.DestinationSlot).CompareTo(Convert.ToInt16(y.DestinationSlot)); });
                 if (Jobs[0].Destination.Equals(Jobs[1].Destination))
                 {
+                    int DestSlotDiff = Convert.ToInt16(Jobs[1].DestinationSlot) - Convert.ToInt16(Jobs[0].DestinationSlot);
+                    Jobs.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
+                    //上下手臂DestSlot順序相反問題
                     int SlotDiff = Convert.ToInt16(Jobs[1].DestinationSlot) - Convert.ToInt16(Jobs[0].DestinationSlot);
-                    if (SlotDiff == 1)
+
+                    if (SlotDiff == 1 && DestSlotDiff == 1)
                     {//雙臂同放
                         Wafer = Jobs[1];
                         Transaction txn = new Transaction();
@@ -1067,6 +1130,7 @@ namespace TransferControl.Engine
                         txn.Method = Transaction.Command.RobotType.DoublePut;
                         txn.Arm = "";
                         txn.ScriptName = ScriptName;
+                        txn.FormName = FormName;
                         RobotNode.SendCommand(txn);
                     }
                     else
@@ -1081,6 +1145,7 @@ namespace TransferControl.Engine
                         txn.Method = Transaction.Command.RobotType.Put;
                         txn.Arm = Wafer.Slot;
                         txn.ScriptName = ScriptName;
+                        txn.FormName = FormName;
                         RobotNode.SendCommand(txn);
                     }
                 }
@@ -1147,7 +1212,7 @@ namespace TransferControl.Engine
                 {
                     case "Robot":
 
-                        if (_Mode.Equals("Start"))
+                        if (!_Mode.Equals("Stop"))
                         {
                             switch (Node.Phase)
                             {
@@ -1165,7 +1230,7 @@ namespace TransferControl.Engine
                                         }
                                         foreach (Path.Action eachAction in eachPath.TodoList)
                                         {
-                                            TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node);
+                                            TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
                                         }
                                         break;
                                     }
@@ -1180,8 +1245,8 @@ namespace TransferControl.Engine
                         break;
                     case "Aligner":
                     case "OCR":
-                        
-                        if (_Mode.Equals("Start"))
+
+                        if (!_Mode.Equals("Stop"))
                         {
                             //TargetJob = Txn.TargetJobs[0];
                             foreach (Path eachPath in PathManagement.GetExcutePath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
@@ -1235,14 +1300,14 @@ namespace TransferControl.Engine
                                 }
                                 foreach (Path.Action eachAction in eachPath.TodoList)
                                 {
-                                    TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node);
+                                    TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
                                 }
                                 break;
                             }
                         }
                         break;
                     case "LoadPort":
-                        if (Txn.FormName.Equals("StartMode") && Txn.Method.Equals(Transaction.Command.LoadPortType.ReadStatus))
+                        if ((Txn.FormName.Equals("FormMain") || Txn.FormName.Equals("FormRunning")) && Txn.Method.Equals(Transaction.Command.LoadPortType.ReadStatus))
                         {
                             MessageParser parser = new MessageParser(Node.Brand);
                             Dictionary<string, string> content = parser.ParseMessage(Txn.Method, Msg.Value);
@@ -1334,6 +1399,7 @@ namespace TransferControl.Engine
                                 txn.Slot = cmd.Slot;
                                 txn.Value = cmd.Value;
                                 txn.ScriptName = Txn.ScriptName;
+
                                 txn.ScriptIndex = cmd.Index;
                                 txn.TargetJobs = Txn.TargetJobs;
                                 if (cmd.Flag.Equals("End"))
@@ -1351,12 +1417,12 @@ namespace TransferControl.Engine
                     case "Robot":
                         UpdateJobLocation(Node, Txn);
                         UpdateNodeStatus(Node, Txn);
-                        if (_Mode.Equals("Start"))
+                        if (!_Mode.Equals("Stop"))
                         {
                             switch (Node.Phase)
                             {
                                 case "1":
-                                    RobotFetchMode(Node, Txn.ScriptName);
+                                    RobotFetchMode(Node, Txn.ScriptName, Txn.FormName);
                                     break;
                                 case "2":
                                     //TargetJob = Txn.TargetJobs[0];
@@ -1371,7 +1437,7 @@ namespace TransferControl.Engine
                                         }
                                         foreach (Path.Action eachAction in eachPath.TodoList)
                                         {
-                                            TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node);
+                                            TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
                                         }
                                         break;
                                     }
@@ -1380,11 +1446,11 @@ namespace TransferControl.Engine
                                     {//拿好拿滿就去放片吧
                                         logger.Debug("拿好拿滿就去放片吧");
                                         Node.Phase = "3";
-                                        RobotPutMode(Node, Txn.ScriptName);
+                                        RobotPutMode(Node, Txn.ScriptName, Txn.FormName);
                                     }
                                     break;
                                 case "3":
-                                    RobotPutMode(Node, Txn.ScriptName);
+                                    RobotPutMode(Node, Txn.ScriptName, Txn.FormName);
                                     break;
                             }
                         }
@@ -1405,7 +1471,7 @@ namespace TransferControl.Engine
                                 }
                             }
                         }
-                        if (_Mode.Equals("Start"))
+                        if (!_Mode.Equals("Stop"))
                         {
                             //TargetJob = Txn.TargetJobs[0];
                             foreach (Path eachPath in PathManagement.GetFinishPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
@@ -1459,14 +1525,14 @@ namespace TransferControl.Engine
                                 }
                                 foreach (Path.Action eachAction in eachPath.TodoList)
                                 {
-                                    TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node);
+                                    TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
                                 }
                                 break;
                             }
                         }
                         else
                         {
-                            
+
                         }
                         break;
                     case "LoadPort":
@@ -1577,7 +1643,7 @@ namespace TransferControl.Engine
                                 {
                                     logger.Debug("手臂已空，也無待搬送，進入取片狀態");
                                     Node.Phase = "1";
-                                    RobotFetchMode(Node, Txn.ScriptName);
+                                    RobotFetchMode(Node, Txn.ScriptName, Txn.FormName);
                                 }
 
                             }
@@ -1696,7 +1762,10 @@ namespace TransferControl.Engine
                                 TargetNode6.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
                                 _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
                             }
-
+                            //if (IsTaskFinish())
+                            //{
+                            //    _EngReport.On_Task_Finished(Txn.FormName);
+                            //}
                             break;
                         case Transaction.Command.RobotType.Get://更新Wafer位置
                         case Transaction.Command.RobotType.GetAfterWait:
@@ -1769,7 +1838,13 @@ namespace TransferControl.Engine
                                 _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
                                 // logger.Debug(JsonConvert.SerializeObject(Txn.TargetJobs[i]));
                             }
-
+                            //if (Txn.Method.Equals(Transaction.Command.RobotType.Put))
+                            //{
+                            //    if (IsTaskFinish())
+                            //    {
+                            //        _EngReport.On_Task_Finished(Txn.FormName);
+                            //    }
+                            //}
                             break;
 
 
@@ -1787,6 +1862,39 @@ namespace TransferControl.Engine
             }
 
         }
+
+        //private bool IsTaskFinish()
+        //{
+        //    bool result = true;
+        //    //檢查Used port裡是否還有未取的
+        //    foreach (Node port in NodeManagement.GetLoadPortList())
+        //    {
+        //        if (port.Used)
+        //        {
+        //            var find = from job in port.JobList.Values
+        //                          where !job.ProcessFlag && job.MapFlag
+        //                          select job;
+
+        //            if (find.Count() != 0)
+        //            {
+        //                result = false;
+        //            }
+        //        }
+        //    }
+        //    //檢查Aligner Robot是否還有片
+
+        //            var findJob = from job in JobManagement.GetJobList()
+        //                          where job.Position.IndexOf("LoadPort") == -1
+        //                          select job;
+
+        //            if (findJob.Count() != 0)
+        //            {
+        //                result = false;
+        //            }
+
+
+        //    return result;
+        //}
 
         public void On_Command_TimeOut(Node Node, Transaction Txn)
         {

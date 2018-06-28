@@ -105,7 +105,7 @@ namespace TransferControl.Comm
                         port.DataReceived += new SerialDataReceivedEventHandler(Sanwa_DataReceived);
                         break;
                 }
-                
+
 
             }
             catch (Exception e)
@@ -122,17 +122,17 @@ namespace TransferControl.Comm
             try
             {
                 string data = "";
-        //switch (cfg.DeviceType)
-        //{
-        //    case "TDKController":
-        //data = port.ReadTo("\r");
-        
+                //switch (cfg.DeviceType)
+                //{
+                //    case "TDKController":
+                //data = port.ReadTo("\r");
+
                 //        break;
                 //    case "SanwaController":
-                        data = port.ReadTo(((char)3).ToString());
+                data = port.ReadTo(((char)3).ToString());
                 //        break;
                 //}
-               
+
                 ThreadPool.QueueUserWorkItem(new WaitCallback(ConnReport.On_Connection_Message), data);
             }
             catch (Exception e1)
@@ -147,15 +147,9 @@ namespace TransferControl.Comm
             try
             {
                 string data = "";
-                //switch (cfg.DeviceType)
-                //{
-                //    case "TDKController":
+                
                 data = port.ReadTo("\r");
-                //        break;
-                //    case "SanwaController":
-                       // data = port.ReadTo(((char)3).ToString());
-                //        break;
-                //}
+                
 
                 ThreadPool.QueueUserWorkItem(new WaitCallback(ConnReport.On_Connection_Message), data);
             }

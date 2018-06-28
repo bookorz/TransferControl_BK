@@ -35,7 +35,7 @@ namespace TransferControl.Management
         {
             bool result = false;
             var findNotInit = from node in NodeList.Values.ToList()
-                              where !node.InitialComplete && !node.Type.Equals("OCR")
+                              where !node.InitialComplete && !node.Type.Equals("OCR") && !node.ByPass
                               select node;
             if (findNotInit.Count() == 0)
             {
@@ -52,7 +52,7 @@ namespace TransferControl.Management
         {
             string result = "";
             var findAlarm = from node in NodeList.Values.ToList()
-                            where node.State.Equals("Alarm")
+                            where node.State.Equals("Alarm") && !node.ByPass
                             select node;
             if (findAlarm.Count() != 0)
             {
@@ -61,8 +61,8 @@ namespace TransferControl.Management
             else
             {
                 var findPause = from node in NodeList.Values.ToList()
-                              where node.State.Equals("Pause")
-                              select node;
+                              where node.State.Equals("Pause") && !node.ByPass
+                                select node;
                 if (findPause.Count() != 0)
                 {
                     result = "Pause";
@@ -70,7 +70,7 @@ namespace TransferControl.Management
                 else
                 {
                     var findRun = from node in NodeList.Values.ToList()
-                                  where node.State.Equals("Run")
+                                  where node.State.Equals("Run") && !node.ByPass
                                   select node;
                     if (findRun.Count() != 0)
                     {
@@ -79,7 +79,7 @@ namespace TransferControl.Management
                     else
                     {
                         var findIdle = from node in NodeList.Values.ToList()
-                                       where node.State.Equals("Idle")
+                                       where node.State.Equals("Idle") && !node.ByPass
                                        select node;
                         if (findIdle.Count() != 0)
                         {
@@ -88,7 +88,7 @@ namespace TransferControl.Management
                         else
                         {
                             var findDown = from node in NodeList.Values.ToList()
-                                           where node.State.Equals("Down")
+                                           where node.State.Equals("Down") && !node.ByPass
                                            select node;
                             if (findDown.Count() != 0)
                             {
@@ -274,80 +274,6 @@ namespace TransferControl.Management
                         break;
                     }
                 }
-            }
-            return result;
-        }
-
-        public static Node GetNotReservAligner()
-        {
-            Node result = null;
-
-            foreach (Node each in NodeList.Values.ToList())
-            {
-                if (each.Type.Equals("Aligner") && each.LockByNode.Equals(""))
-                {
-                    result = each;
-                }
-            }
-
-            return result;
-        }
-
-        public static Node GetAnotherAligner(string ExcludeName)
-        {
-            Node result = null;
-
-            foreach (Node each in NodeList.Values.ToList())
-            {
-                if (each.Type.Equals("Aligner") && !each.Name.Equals(ExcludeName))
-                {
-                    result = each;
-                }
-            }
-
-            return result;
-        }
-
-        public static Node GetAligner(string RobotPos, string JobFromPort)
-        {
-            Node result = null;
-
-            result = Get(RobotPos);
-            if (result == null)
-            {
-                result = GetReservAligner(JobFromPort);
-            }
-            else
-            {
-                if (!result.Type.Equals("Aligner"))
-                {
-                    result = GetReservAligner(JobFromPort);
-                }
-            }
-
-
-
-            return result;
-        }
-
-        public static Node GetReservAligner(string FromPort)
-        {
-            Node result = null;
-            Node alternative = null;
-            foreach (Node each in NodeList.Values.ToList())
-            {
-                if (each.Type.Equals("Aligner") && each.LockByNode.Equals(FromPort))//優先尋找預約的
-                {
-                    result = each;
-                }
-                else if (each.Type.Equals("Aligner") && each.LockByNode.Equals(""))//同時尋找沒有被預約的替代目標
-                {
-                    alternative = each;
-                }
-            }
-            if (result == null)
-            {
-                result = alternative;
             }
             return result;
         }

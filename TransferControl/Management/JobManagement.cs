@@ -16,6 +16,23 @@ namespace TransferControl.Management
             JobList.Clear();
         }
 
+        public static void ClearAssignJobByPort(string PortName)
+        {
+            var findAssignJob = from job in GetJobList()
+                                where job.Destination.Equals(PortName)
+                                select job;
+
+            if (findAssignJob.Count() != 0)
+            {
+                foreach (Job j in findAssignJob)
+                {
+                    j.Destination = "";
+                    j.DestinationSlot = "";
+                    j.DisplayDestination = "";
+                }
+            }
+        }
+
         public static List<Job> GetJobList()
         {
 

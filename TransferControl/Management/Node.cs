@@ -14,15 +14,14 @@ namespace TransferControl.Management
     public class Node
     {
 
-
-
-
         ILog logger = LogManager.GetLogger(typeof(Node));
         public string Name { get; set; }
         public string Controller { get; set; }
         public string AdrNo { get; set; }
         public string Type { get; set; }
         public string Brand { get; set; }
+        public bool Used { get; set; }
+        public bool Finished { get; set; }
         public string Phase { get; set; }
         public string CurrentLoadPort { get; set; }
         public string LockByNode { get; set; }
@@ -49,6 +48,10 @@ namespace TransferControl.Management
         public bool Fetchable { get; set; }
         public bool Release { get; set; }
         public bool HasAlarm { get; set; }
+        public bool ByPass { get; set; }
+        public string DestPort { get; set; }
+        public string DefaultAligner { get; set; }
+        public string AlternativeAligner { get; set; }
         public DateTime LoadTime { get; set; }
         public ConcurrentDictionary<string, Job> ReserveList { get; set; }
         public ConcurrentDictionary<string, Job> JobList { get; set; }
@@ -96,11 +99,15 @@ namespace TransferControl.Management
             Enable = true;
             Release = true;
             HasAlarm = false;
+            Used = false;
+            Finished = false;
             if (Type == "LoadPort")
             {
                 Available = false;
+                Mode = "UD";
             }
             Fetchable = false;
+            DestPort = "";
             LoadTime = new DateTime();
 
         } 
@@ -162,6 +169,11 @@ namespace TransferControl.Management
             bool result = false;
             try
             {
+                if (this.ByPass)
+                {
+                    logger.Debug("Command cancel,Cause "+this.Name+" in by pass mode.");
+                    return true;
+                }
 
                 IController Ctrl = ControllerManagement.Get(Controller);
                 if (this.Brand.ToUpper().Equals("KAWASAKI"))
