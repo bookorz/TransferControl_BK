@@ -69,7 +69,6 @@
     <Compile Include="Management\CommandScript.cs" />
     <Compile Include="Management\CommandScriptManagement.cs" />
     <Compile Include="Management\ControllerManagement.cs" />
-    <Compile Include="Management\DBUtil.cs" />
     <Compile Include="Management\ITransactionReport.cs" />
     <Compile Include="Management\Job.cs" />
     <Compile Include="Management\JobManagement.cs" />
