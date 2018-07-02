@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TransferControl.Parser
 {
-    class MessageParser
+    public class MessageParser
     {
         IParser P;
         public MessageParser(string Supplier)

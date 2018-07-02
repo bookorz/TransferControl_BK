@@ -49,6 +49,7 @@ namespace TransferControl.Management
         public bool Release { get; set; }
         public bool HasAlarm { get; set; }
         public bool ByPass { get; set; }
+        public bool FoupReady { get; set; }
         public string DestPort { get; set; }
         public string DefaultAligner { get; set; }
         public string AlternativeAligner { get; set; }
@@ -107,6 +108,7 @@ namespace TransferControl.Management
                 Mode = "UD";
             }
             Fetchable = false;
+            FoupReady = false;
             DestPort = "";
             LoadTime = new DateTime();
 
@@ -219,7 +221,20 @@ namespace TransferControl.Management
                 {
                     Route t = findRoute.First();
                     txn.Point = t.Point;
-
+                    if (t.NodeType.Equals("LoadPort"))
+                    {
+                        Node port = NodeManagement.Get(t.NodeName);
+                        if (port != null)
+                        {
+                            if (!port.ByPass)
+                            {
+                                Transaction InterLockTxn = new Transaction();
+                                InterLockTxn.Method = Transaction.Command.LoadPortType.ReadStatus;
+                                InterLockTxn.FormName = "InterLockChk";
+                                port.SendCommand(InterLockTxn);
+                            }
+                        }
+                    }
                 }
 
                 switch (this.Type)
