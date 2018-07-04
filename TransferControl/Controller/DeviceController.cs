@@ -292,7 +292,7 @@ namespace TransferControl.Controller
                                 }
                                 else if (TransactionList.TryRemove(key, out Txn))
                                 {
-                                    Node.InitialComplete = false;
+                                   // Node.InitialComplete = false;
                                     switch (ReturnMsg.Type)
                                     {
                                         case ReturnMessage.ReturnType.Excuted:
@@ -369,15 +369,23 @@ namespace TransferControl.Controller
                                     }
                                     break;
                                 case ReturnMessage.ReturnType.Finished:
-
+                                    if(Node.Type.Equals("LoadPort"))
+                                    {
+                                        Node.InterLock = false;
+                                    }
                                     _ReportTarget.On_Command_Finished(Node, Txn, ReturnMsg);
                                     if (!Node.Type.Equals("LoadPort"))
                                     {
                                         _ReportTarget.On_Node_State_Changed(Node, "Idle");
                                     }
+                                    
+                                    
                                     break;
                                 case ReturnMessage.ReturnType.Error:
-
+                                    if (Node.Type.Equals("LoadPort"))
+                                    {
+                                        Node.InterLock = false;
+                                    }
                                     _ReportTarget.On_Command_Error(Node, Txn, ReturnMsg);
 
                                     break;
@@ -409,7 +417,7 @@ namespace TransferControl.Controller
             _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Connected");
 
         }
-
+        
         public void On_Connection_Connecting(string Msg)
         {
             this.Status = "Connecting";

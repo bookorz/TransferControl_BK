@@ -616,6 +616,10 @@ namespace TransferControl.Management
 
                         return false;
                     }
+                    if (this.Type.Equals("LoadPort"))
+                    {
+                        this.InterLock = true;
+                    }
                 }
                 if (Ctrl.DoWork(txn))
                 {
@@ -626,6 +630,10 @@ namespace TransferControl.Management
                 {
                     logger.Debug("SendCommand fail.");
                     result = false;
+                    if (this.Type.Equals("LoadPort"))
+                    {
+                        this.InterLock = false;
+                    }
                 }
 
 
