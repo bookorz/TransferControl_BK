@@ -48,29 +48,7 @@ namespace TransferControl.Management
             return result;
         }
 
-        public static List<string> GetJobIDByPiority(string Position)
-        {
-
-            List<string> result = new List<string>();
-            lock (JobList)
-            {
-                List<Job> SortByPiority = JobList.Values.ToList();
-                SortByPiority.Sort((x, y) => { return -x.Piority.CompareTo(y.Piority); });
-
-                foreach (Job eachJob in SortByPiority)
-                {
-
-                    if (eachJob.Position.Equals(Position) && !eachJob.Position.Equals(eachJob.Destination))
-                    {
-                        result.Add(eachJob.Job_Id);
-                        break;
-                    }
-
-                }
-            }
-            return result;
-        }
-
+        
         public static Job Get(string Job_Id)
         {
             Job result = null;

@@ -20,10 +20,10 @@ namespace TransferControl.Management
             {
                 each.CurrentLoadPort = "";
                 each.CurrentPosition = "";
-                each.CurrentWaitNode = "";
+                
                 //each.InitialComplete = false;
                 each.JobList.Clear();
-                each.LockByNode = "";
+               
                 each.Phase = "";
                 each.PutOut = false;
                 //each.TransferQueue.Clear();

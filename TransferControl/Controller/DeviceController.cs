@@ -142,8 +142,9 @@ namespace TransferControl.Controller
 
                 Txn.SetTimeOutReport(this);
                 Txn.SetTimeOutMonitor(true);
-
+                TransactionRecord.New(Txn);
                 conn.Send(Txn.CommandEncodeStr);
+                
                 string waferids = "";
                 foreach (Job each in Txn.TargetJobs)
                 {
@@ -353,15 +354,23 @@ namespace TransferControl.Controller
                                     }
                                 }
                             }
-
+                            
                             switch (ReturnMsg.Type)
                             {
                                 case ReturnMessage.ReturnType.Information:
                                 case ReturnMessage.ReturnType.Event:
+                                    Transaction t = new Transaction();
+                                    t.NodeName = Node.Name;
+                                    t.NodeType = Node.Type;
+                                    t.Value = ReturnMsg.Value;
+                                    t.CommandEncodeStr = ReturnMsg.OrgMsg;
+                                    t.Method = ReturnMsg.Command;
+                                    TransactionRecord.New(t,ReturnMsg.Type);
+                                    //TransactionRecord.AddDetail(TransactionRecord.GetUUID(), Node.Name,Node.Type,ReturnMsg.Type,ReturnMsg.Value);
                                     _ReportTarget.On_Event_Trigger(Node, ReturnMsg);
                                     break;
                                 case ReturnMessage.ReturnType.Excuted:
-
+                                    TransactionRecord.Update(Txn, ReturnMsg);
                                     _ReportTarget.On_Command_Excuted(Node, Txn, ReturnMsg);
                                     if (Txn.CommandType.Equals("CMD") && !Node.Type.Equals("LoadPort"))
                                     {
@@ -369,7 +378,8 @@ namespace TransferControl.Controller
                                     }
                                     break;
                                 case ReturnMessage.ReturnType.Finished:
-                                    if(Node.Type.Equals("LoadPort"))
+                                    TransactionRecord.Update(Txn, ReturnMsg);
+                                    if (Node.Type.Equals("LoadPort"))
                                     {
                                         Node.InterLock = false;
                                     }
@@ -382,6 +392,7 @@ namespace TransferControl.Controller
                                     
                                     break;
                                 case ReturnMessage.ReturnType.Error:
+                                    TransactionRecord.Update(Txn, ReturnMsg);
                                     if (Node.Type.Equals("LoadPort"))
                                     {
                                         Node.InterLock = false;
@@ -391,8 +402,8 @@ namespace TransferControl.Controller
                                     break;
 
                             }
-
-                            //}
+                            
+                            
                         }
                         else
                         {

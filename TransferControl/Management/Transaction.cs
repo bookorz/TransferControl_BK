@@ -9,7 +9,7 @@ namespace TransferControl.Management
 {
     public class Transaction
     {
-
+        public string uuid { get; set; }
         public List<Job> TargetJobs { get; set; }
         public string AdrNo { get; set; }
         public string Seq { get; set; }

@@ -27,13 +27,16 @@ namespace TransferControl.Engine
 
         public int SpinWaitTimeOut = 99999000;
 
-
+        /// <summary>
+        /// 建構子，傳入一個事件回報對象
+        /// </summary>
+        /// <param name="ReportTarget"></param>
         public RouteControl(IEngineReport ReportTarget)
         {
             _Mode = "Stop";
             _EngReport = ReportTarget;
 
-
+            //初始化所有Controller
             ConfigTool<DeviceConfig> DeviceCfg = new ConfigTool<DeviceConfig>();
             foreach (DeviceConfig eachDevice in DeviceCfg.ReadFileByList("config/Controller/Controllers.json"))
             {
@@ -45,6 +48,8 @@ namespace TransferControl.Engine
                 //ctrl.Connect();
                 ControllerManagement.Add(eachDevice.DeviceName, ctrl);
             }
+
+            //初始化所有Node
             ConfigTool<Node> NodeCfg = new ConfigTool<Node>();
 
             foreach (Node eachNode in NodeCfg.ReadFileByList("config/Node/Nodes.json"))
@@ -58,22 +63,30 @@ namespace TransferControl.Engine
                 NodeManagement.Add(eachNode.Name, eachNode);
 
             }
-
+            //初始化傳送腳本
             PathManagement.LoadConfig();
+            //初始化命令腳本
             CommandScriptManagement.LoadConfig();
+            //初始化命令參數轉換表
             CmdParamManagement.Initialize();
         }
-
+        /// <summary>
+        /// 對所有Controller連線
+        /// </summary>
         public void ConnectAll()
         {
             ControllerManagement.ConnectAll();
         }
-
+        /// <summary>
+        /// 對所有Controller斷線
+        /// </summary>
         public void DisconnectAll()
         {
             ControllerManagement.DisonnectAll();
         }
-
+        /// <summary>
+        /// 整機暫停後啟動
+        /// </summary>
         public void Continue()
         {
             if (_Mode.Equals("Pause"))
@@ -102,6 +115,9 @@ namespace TransferControl.Engine
                 throw new Exception("狀態錯誤:無法執行");
             }
         }
+        /// <summary>
+        /// 整機暫停
+        /// </summary>
         public void Pause()
         {
             if (_Mode.Equals("Start"))
@@ -132,7 +148,9 @@ namespace TransferControl.Engine
         }
 
 
-
+        /// <summary>
+        /// 整機Wafer搬送停止
+        /// </summary>
         public void Stop()
         {
             lock (this)
@@ -157,7 +175,10 @@ namespace TransferControl.Engine
             }
 
         }
-
+        /// <summary>
+        /// 整機Wafer搬送開始
+        /// </summary>
+        /// <param name="FormName"></param>
         public void Start(string FormName)
         {
             lock (this)
@@ -170,7 +191,7 @@ namespace TransferControl.Engine
                 else
                 {
                     _Mode = "Start";
-
+                    //把所有殘餘命令清除
                     ControllerManagement.ClearTransactionList();
                     if (FormName.Equals("Running"))
                     {
@@ -184,7 +205,10 @@ namespace TransferControl.Engine
             }
             ThreadPool.QueueUserWorkItem(new WaitCallback(StartMonitor), FormName);
         }
-
+        /// <summary>
+        /// 監控可用Foup，並開始搬送
+        /// </summary>
+        /// <param name="FormName"></param>
         private void StartMonitor(object FormName)
         {
 
@@ -268,7 +292,7 @@ namespace TransferControl.Engine
                             logger.Debug("RobotFetchMode " + robot.Name + " 找不到可以搬的Port");
                             robot.Phase = "2";
                             robot.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
-                            robot.Release = true;
+                            
                             continue;
                         }
                     }
@@ -287,7 +311,10 @@ namespace TransferControl.Engine
             }
             logger.Debug("結束Start模式");
         }
-
+        /// <summary>
+        /// 搬運週期完成條件
+        /// </summary>
+        /// <returns></returns>
         private bool CheckCycle()
         {
 
@@ -304,7 +331,11 @@ namespace TransferControl.Engine
 
             return b & c;
         }
-
+        /// <summary>
+        /// 確認在席
+        /// </summary>
+        /// <param name="Node"></param>
+        /// <returns></returns>
         private bool CheckPresent(Node Node)
         {
             bool a = (from jb in Node.JobList.Values
@@ -313,7 +344,10 @@ namespace TransferControl.Engine
 
             return a;
         }
-
+        /// <summary>
+        /// 取得目前模式
+        /// </summary>
+        /// <returns></returns>
         public string GetMode()
         {
             string result = "";
@@ -324,14 +358,19 @@ namespace TransferControl.Engine
 
             return result;
         }
-
+        /// <summary>
+        /// Phase1 取片模式
+        /// </summary>
+        /// <param name="RobotNode"></param>
+        /// <param name="ScriptName"></param>
+        /// <param name="FormName"></param>
         private void RobotFetchMode(Node RobotNode, string ScriptName, string FormName)
         {
             RobotNode.Phase = "1";
             RobotNode.GetAvailable = false;
             RobotNode.PutAvailable = false;
             RobotNode.AllDone = false;
-            RobotNode.Release = false;
+          
             if (RobotNode.JobList.Count == 0)//雙臂皆空
             {
 
@@ -356,7 +395,7 @@ namespace TransferControl.Engine
                     logger.Debug("RobotFetchMode " + RobotNode.Name + " 找不到可以搬的Port");
                     RobotNode.Phase = "2";
                     RobotNode.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
-                    RobotNode.Release = true;
+                  
                     return;
                 }
                 foreach (Node PortNode in findPort)
@@ -381,15 +420,19 @@ namespace TransferControl.Engine
                         {
                             PortNode.Fetchable = false;
                             PortNode.Available = false;
+
                             logger.Debug("RobotFetchMode " + RobotNode.Name + " 找不到可以搬的Wafer");
                             RobotNode.Phase = "2";
                             RobotNode.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
-                            RobotNode.Release = true;
+                           
 
-                            _EngReport.On_Node_State_Changed(PortNode, "Ready To UnLoad");
-
-                            _EngReport.On_Port_Finished(PortNode.Name, FormName);
-
+                            //因(FindNextJob())會產生兩支執行序，所以要確保場上都沒有WAFER才能觸發On_Port_Finished事件
+                            if ((from Job in JobManagement.GetJobList()
+                                 where Job.Position.IndexOf("Robot") != -1 || Job.Position.IndexOf("Aligner") != -1
+                                 select Job).Count() == 0)
+                            {
+                                _EngReport.On_Port_Finished(PortNode.Name, FormName);
+                            }
                         }
                         else
                         {
@@ -406,7 +449,7 @@ namespace TransferControl.Engine
                                         TargetJobs.Add(eachJob);
                                         RobotNode.CurrentLoadPort = PortNode.Name;
                                         //找到第一片
-                                        eachJob.FetchRobot = RobotNode.Name;
+                                       
                                         if (eachJob.AlignerFlag)
                                         {
                                             NodeManagement.Get(RobotNode.DefaultAligner).UnLockByJob = eachJob.Job_Id;
@@ -428,7 +471,7 @@ namespace TransferControl.Engine
                                             ConsecutiveSlot = false;
                                         }
 
-                                        eachJob.FetchRobot = RobotNode.Name;
+                                       
                                         break;//找到第二片
                                     }
                                 }
@@ -580,45 +623,50 @@ namespace TransferControl.Engine
 
         }
 
-
+        /// <summary>
+        /// Phase2 處理階段開始，控制放片
+        /// </summary>
+        /// <param name="RobotNode"></param>
+        /// <param name="ScriptName"></param>
+        /// <param name="FormName"></param>
         private void FindNextJob(Node RobotNode, string ScriptName, string FormName)
         {
-
-            var find = from job in RobotNode.JobList.Values.ToList()
-                       where !job.ProcessFlag
-                       select job;
-            string lastProcessNode = "";
-            if (find.Count() != 0)
+            try
             {
-                RobotNode.PutAvailable = true;
-                List<Job> Js = find.ToList();
-                Js.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
-                foreach (Job each in Js)
+                var find = from job in RobotNode.JobList.Values.ToList()
+                           where !job.ProcessFlag
+                           select job;
+                string lastProcessNode = "";
+                if (find.Count() != 0)
                 {
-                    logger.Debug("等待可以放片時機:" + each.Job_Id);
-                    SpinWait.SpinUntil(() => RobotNode.PutAvailable || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待可以放片時機
-                    if (_Mode.Equals("Stop"))
+                    RobotNode.PutAvailable = true;
+                    List<Job> Js = find.ToList();
+                    Js.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
+                    foreach (Job each in Js)
                     {
-                        logger.Debug("離開自動模式");
-                        return;
-                    }
-                    logger.Debug("可以放片:" + each.Job_Id);
-                    RobotNode.PutAvailable = false;
-                    if (lastProcessNode.Equals(""))
-                    {
+                        logger.Debug("等待可以放片時機:" + each.Job_Id);
+                        SpinWait.SpinUntil(() => RobotNode.PutAvailable || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待可以放片時機
+                        if (_Mode.Equals("Stop"))
+                        {
+                            logger.Debug("離開自動模式");
+                            return;
+                        }
+                        logger.Debug("可以放片:" + each.Job_Id);
+                        RobotNode.PutAvailable = false;
+                        if (lastProcessNode.Equals(""))
+                        {
 
-                        each.ProcessNode = NodeManagement.Get(RobotNode.DefaultAligner).Name;
-                        lastProcessNode = each.ProcessNode;
-                    }
-                    else
-                    {
-                        //each.ProcessNode = NodeManagement.GetAnotherAligner(lastProcessNode).Name;
-                        each.ProcessNode = NodeManagement.Get(RobotNode.DefaultAligner).Name;
-                    }
-                    List<Job> TargetJobs = new List<Job>();
-                    TargetJobs.Add(each);
-                    try
-                    {
+                            each.ProcessNode = NodeManagement.Get(RobotNode.DefaultAligner).Name;
+                            lastProcessNode = each.ProcessNode;
+                        }
+                        else
+                        {
+                            //each.ProcessNode = NodeManagement.GetAnotherAligner(lastProcessNode).Name;
+                            each.ProcessNode = NodeManagement.Get(RobotNode.DefaultAligner).Name;
+                        }
+                        List<Job> TargetJobs = new List<Job>();
+                        TargetJobs.Add(each);
+
                         foreach (Path eachPath in PathManagement.GetFinishPath(ScriptName, "WAIT_PROCESS", ""))
                         {
                             each.CurrentState = eachPath.ChangeToStatus;
@@ -629,21 +677,28 @@ namespace TransferControl.Engine
                             }
                             break;
                         }
-                    }
-                    catch (Exception ee)
-                    {
-                        string ttt = "";
+
                     }
                 }
+                else
+                {
+
+                    logger.Debug("沒有東西可以做");
+
+                }
             }
-            else
+            catch (Exception e)
             {
-
-                logger.Debug("沒有東西可以做");
-
+                logger.Error("(FindNextJob)" + e.Message + "\n" + e.StackTrace);
             }
         }
-
+        /// <summary>
+        /// 取得Script設定的物件
+        /// </summary>
+        /// <param name="Position"></param>
+        /// <param name="Job"></param>
+        /// <param name="Node"></param>
+        /// <returns></returns>
         private Node GetPosNode(string Position, Job Job, Node Node)
         {
             Node result = null;
@@ -701,7 +756,12 @@ namespace TransferControl.Engine
             }
             return result;
         }
-
+        /// <summary>
+        /// 取得手臂和Slot位置
+        /// </summary>
+        /// <param name="txn"></param>
+        /// <param name="Node"></param>
+        /// <param name="TargetJob"></param>
         private void GetArmSlot(ref Transaction txn, Node Node, Job TargetJob)
         {
             Node target = NodeManagement.Get(txn.Position);
@@ -719,23 +779,23 @@ namespace TransferControl.Engine
                         }
                         else
                         {
-                            txn.Slot = "1";
-                            txn.Arm = TargetJob.Slot;
+                            txn.Slot = "1";//目前只有Aligner，寫死Slot 1
+                            txn.Arm = TargetJob.Slot;//用目前在Robot上的Slot，就是手臂號碼
                         }
                         break;
                     case Transaction.Command.RobotType.PutBack:
-                        txn.Slot = "1";
+                        txn.Slot = "1";//目前只有Aligner，寫死Slot 1
                         txn.Arm = Node.PutOutArm;
                         break;
                     case Transaction.Command.RobotType.GetWait:
-                        txn.Arm = "1";
-                        txn.Slot = "1";
+                        txn.Arm = "1";//暫時都用上手臂去等
+                        txn.Slot = "1";//目前只有Aligner，寫死Slot 1
                         break;
                     case Transaction.Command.RobotType.WaitBeforeGet:
                     case Transaction.Command.RobotType.Get:
                     case Transaction.Command.RobotType.GetAfterWait:
                         txn.Slot = TargetJob.Slot;
-                        if (!Node.JobList.ContainsKey("1"))
+                        if (!Node.JobList.ContainsKey("1"))//找到Robot的空手臂，取片
                         {
                             txn.Arm = "1";
                         }
@@ -755,7 +815,14 @@ namespace TransferControl.Engine
                 logger.Debug("txn.Position:" + txn.Position + " is not found.");
             }
         }
-
+        /// <summary>
+        /// 傳送腳本
+        /// </summary>
+        /// <param name="ScriptName"></param>
+        /// <param name="Action"></param>
+        /// <param name="TargetJobs"></param>
+        /// <param name="FinNode"></param>
+        /// <param name="FormName"></param>
         private void TodoAction(string ScriptName, Path.Action Action, List<Job> TargetJobs, Node FinNode, string FormName)
         {
             try
@@ -902,7 +969,7 @@ namespace TransferControl.Engine
                                 logger.Debug("離開自動模式");
                                 return;
                             }
-                            logger.Debug(JsonConvert.SerializeObject(Node));
+                            //logger.Debug(JsonConvert.SerializeObject(Node));
                             logger.Debug("TargetJob.Job_Id:" + TargetJob.Job_Id);
                             if (Node.PutOut && !Action.Method.Equals(Transaction.Command.RobotType.GetAfterWait) && !Action.Method.Equals(Transaction.Command.RobotType.PutBack) && !Action.Method.Equals(Transaction.Command.RobotType.Get))
                             {
@@ -932,7 +999,7 @@ namespace TransferControl.Engine
                                 else if (Node.Phase.Equals("2") && ((Node.GetAvailable && Node.GetMutex && Node.JobList.Count < 2) || (Node.GetAvailable && !Node.InterLock && (Node.UnLockByJob.Equals(TargetJob.Job_Id) || Node.UnLockByJob.Equals("")) && Node.JobList.Count < 2) || Force))
                                 {
 
-                                    logger.Debug(JsonConvert.SerializeObject(Node));
+                                    //logger.Debug(JsonConvert.SerializeObject(Node));
                                     Node.Reserve = false;//釋放預約
                                     Node.GetMutex = false;//鎖定Robot
 
@@ -1095,7 +1162,12 @@ namespace TransferControl.Engine
             }
 
         }
-
+        /// <summary>
+        ///Phase3 放Foup階段
+        /// </summary>
+        /// <param name="RobotNode"></param>
+        /// <param name="ScriptName"></param>
+        /// <param name="FormName"></param>
         private void RobotPutMode(Node RobotNode, string ScriptName, string FormName)
         {
             Job Wafer;
@@ -1169,207 +1241,283 @@ namespace TransferControl.Engine
 
 
 
-
+        /// <summary>
+        /// 命令傳送成功
+        /// </summary>
+        /// <param name="Node"></param>
+        /// <param name="Txn"></param>
+        /// <param name="Msg"></param>
         public void On_Command_Excuted(Node Node, Transaction Txn, ReturnMessage Msg)
         {
             try
             {
                 logger.Debug("On_Command_Excuted");
-                switch (Node.Type)
+
+                //所有裝置
+                switch (Txn.Method)
                 {
-                    case "LoadPort":
-                        switch (Txn.Method)
-                        {
-                            case Transaction.Command.LoadPortType.Unload:
-                            case Transaction.Command.LoadPortType.MappingUnload:
-                            case Transaction.Command.LoadPortType.DoorUp:
-                            case Transaction.Command.LoadPortType.InitialPos:
-                            case Transaction.Command.LoadPortType.ForceInitialPos:
-                                Node.InterLock = true;
-                                break;
-                            case Transaction.Command.LoadPortType.ReadStatus:
-                                if (Txn.FormName.Equals("InterLockTxn"))
-                                {
-                                    MessageParser parser = new MessageParser(Node.Brand);
-                                    Dictionary<string, string> content = parser.ParseMessage(Txn.Method, Msg.Value);
-                                    bool CheckResult = true;
-                                    foreach (KeyValuePair<string, string> each in content)
-                                    {
-                                        switch (each.Key)
-                                        {
-
-                                            case "Y Axis Position":
-                                                if (!each.Value.Equals("Dock position"))
-                                                {
-                                                    CheckResult = false;
-                                                }
-                                                break;
-                                            case "Door Position":
-                                                if (each.Value.Equals("Close position"))
-                                                {
-                                                    CheckResult = false;
-                                                }
-                                                break;
-
-                                        }
-                                    }
-                                    if (!CheckResult)
-                                    {
-                                        //檢查到LoadPort狀態不允許Robot存取
-                                        var findRoute = from rt in Node.RouteTable
-                                                        where rt.NodeType.Equals("Robot")
-                                                        select rt;
-                                        foreach (Node.Route rt in findRoute)
-                                        {//暫停Robot所有動作
-                                            Transaction StopTxn = new Transaction();
-                                            StopTxn.Method = Transaction.Command.RobotType.Pause;
-                                            StopTxn.FormName = "InterLockTxn";
-                                            logger.Error("LoadPort " + Node.Name + " is not ready, send pause cmd to " + rt.NodeName + ".");
-                                            NodeManagement.Get(rt.NodeName).SendCommand(StopTxn);
-                                        }
-                                    }
-                                }
-                                break;
-                        }
-
-                       
-                        break;
-                    default:
-                        switch (Txn.Method)
-                        {
-                            case Transaction.Command.RobotType.Reset:
-                                if (Node.LastState.Equals(""))
-                                {
-                                    Node.State = "Idle";
-                                }
-                                else
-                                {
-                                    if (Node.State.Equals("Alarm"))
-                                    {
-                                        Node.State = "Idle";
-                                    }
-                                    else
-                                    {
-                                        Node.State = Node.LastState;
-                                    }
-                                }
-                                _EngReport.On_Node_State_Changed(Node, Node.State);
-                                break;
-                        }
+                    case Transaction.Command.RobotType.Reset:
+                        Node.State = Node.LastState;
+                        _EngReport.On_Node_State_Changed(Node, Node.State);
                         break;
                 }
+
+
 
                 Job TargetJob = null;
-                
-                if (Node.Type.Equals("Robot"))
-                {
-                    Node.CurrentPosition = Txn.Position;
-                }
-                switch (Node.Type)
-                {
-
-                    case "Robot":
-
-                        if (!_Mode.Equals("Stop"))
-                        {
-                            switch (Node.Phase)
-                            {
-                                case "1":
-
-                                    break;
-                                case "2":
-
-
-                                    foreach (Path eachPath in PathManagement.GetExcutePath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
-                                    {
-                                        if (!eachPath.ChangeToStatus.Equals(""))
-                                        {
-                                            TargetJob.CurrentState = eachPath.ChangeToStatus;
-                                        }
-                                        foreach (Path.Action eachAction in eachPath.TodoList)
-                                        {
-                                            TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
-                                        }
-                                        break;
-                                    }
-
-                                    break;
-                                case "3":
-
-                                    break;
-                            }
-
-                        }
-                        break;
-                    case "Aligner":
-                    case "OCR":
-
-                        if (!_Mode.Equals("Stop"))
-                        {
-                            //TargetJob = Txn.TargetJobs[0];
-                            foreach (Path eachPath in PathManagement.GetExcutePath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
-                            {
-                                if (!eachPath.Expression.Equals(""))
-                                {
-                                    switch (eachPath.Expression)
-                                    {
-                                        case "[Job.AlignerFlag] == true":
-                                            if (!TargetJob.AlignerFlag)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                        case "[Job.AlignerFlag] == false":
-                                            if (TargetJob.AlignerFlag)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                        case "[Job.OCRFlag] == true":
-                                            if (!TargetJob.OCRFlag)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                        case "[Job.OCRFlag] == false":
-                                            if (TargetJob.OCRFlag)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                        case "[Job.AlignerFinished] == true":
-                                            if (!TargetJob.AlignerFinished)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                        case "[Job.AlignerFinished] == false":
-                                            if (TargetJob.AlignerFinished)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                    }
-                                }
-
-                                if (!eachPath.ChangeToStatus.Equals(""))
-                                {
-                                    TargetJob.CurrentState = eachPath.ChangeToStatus;
-                                }
-                                foreach (Path.Action eachAction in eachPath.TodoList)
-                                {
-                                    TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
-                                }
-                                break;
-                            }
-                        }
-                        break;
-
-                }
-                _EngReport.On_Command_Excuted(Node, Txn, Msg);
                 if (Txn.TargetJobs.Count != 0)
                 {
                     TargetJob = Txn.TargetJobs[0];
+                    if (Node.Type.Equals("Robot"))
+                    {
+                        Node.CurrentPosition = Txn.Position;
+                    }//分裝置別
+                    switch (Node.Type)
+                    {
+                        case "LoadPort":
+                            switch (Txn.Method)
+                            {
+
+
+                                case Transaction.Command.LoadPortType.Unload:
+                                case Transaction.Command.LoadPortType.MappingUnload:
+                                case Transaction.Command.LoadPortType.DoorUp:
+                                case Transaction.Command.LoadPortType.InitialPos:
+                                case Transaction.Command.LoadPortType.ForceInitialPos:
+                                    //LoadPort卸載時打開安全鎖
+                                    Node.InterLock = true;
+                                    //標記尚未Mapping
+                                    Node.IsMapping = false;
+                                    //刪除所有帳
+                                    foreach (Job eachJob in Node.JobList.Values)
+                                    {
+                                        JobManagement.Remove(eachJob.Job_Id);
+                                    }
+                                    Node.JobList.Clear();
+                                    Node.ReserveList.Clear();
+                                    JobManagement.ClearAssignJobByPort(Node.Name);
+
+
+                                    break;
+
+                                case Transaction.Command.LoadPortType.ReadStatus:
+                                    //偵測LoadPort門是否有開，沒開就停止所有可能會撞擊的裝置
+                                    if (Txn.FormName.Equals("InterLockTxn"))
+                                    {
+                                        MessageParser parser = new MessageParser(Node.Brand);
+                                        Dictionary<string, string> content = parser.ParseMessage(Txn.Method, Msg.Value);
+                                        bool CheckResult = true;
+                                        string info = "";
+                                        foreach (KeyValuePair<string, string> each in content)
+                                        {
+                                            info += each.Key + ":" + each.Value + " ,";
+                                            switch (each.Key)
+                                            {
+
+                                                case "Y Axis Position":
+                                                    if (!each.Value.Equals("Dock position"))
+                                                    {
+                                                        CheckResult = false;
+                                                    }
+                                                    break;
+                                                case "Door Position":
+                                                    if (!each.Value.Equals("Open position"))
+                                                    {
+                                                        CheckResult = false;
+                                                    }
+                                                    break;
+
+                                            }
+                                        }
+                                        logger.Debug(info);
+                                        if (!CheckResult)
+                                        {
+                                            //檢查到LoadPort狀態不允許Robot存取
+                                            var findRoute = from rt in Node.RouteTable
+                                                            where rt.NodeType.Equals("Robot")
+                                                            select rt;
+                                            foreach (Node.Route rt in findRoute)
+                                            {//暫停Robot所有動作
+                                                Transaction StopTxn = new Transaction();
+                                                StopTxn.Method = Transaction.Command.RobotType.Pause;
+                                                StopTxn.FormName = "InterLockTxn";
+                                                logger.Error("LoadPort " + Node.Name + " is not ready, send pause cmd to " + rt.NodeName + ".");
+                                                NodeManagement.Get(rt.NodeName).SendCommand(StopTxn);
+                                            }
+                                        }
+                                    }
+                                    break;
+                                case Transaction.Command.LoadPortType.GetMapping:
+                                    //產生Mapping資料
+                                    //string Mapping = Msg.Value;
+                                    string Mapping = "1111000000000000000000000";
+                                    //WaferAssignUpdate.UpdateLoadPortMapping(Node.Name, Msg.Value);
+                                    int currentIdx = 1;
+                                    for (int i = 0; i < Mapping.Length; i++)
+                                    {
+                                        Job wafer = new Job();
+                                        wafer.Slot = (i + 1).ToString();
+                                        wafer.FromPort = Node.Name;
+                                        wafer.Position = Node.Name;
+                                        wafer.AlignerFlag = false;
+                                        string Slot = (i + 1).ToString("00");
+                                        switch (Mapping[i])
+                                        {
+                                            case '0':
+                                                wafer.Job_Id = "No wafer";
+                                                wafer.Host_Job_Id = wafer.Job_Id;
+                                                //MappingData.Add(wafer);
+                                                break;
+                                            case '1':
+                                                while (true)
+                                                {
+                                                    wafer.Job_Id = "Wafer" + currentIdx.ToString("00");
+                                                    wafer.Host_Job_Id = wafer.Job_Id;
+                                                    wafer.MapFlag = true;
+                                                    if (JobManagement.Add(wafer.Job_Id, wafer))
+                                                    {
+
+                                                        //MappingData.Add(wafer);
+                                                        break;
+                                                    }
+                                                    currentIdx++;
+                                                }
+
+                                                break;
+                                            case '2':
+                                                wafer.Job_Id = "Crossed";
+                                                wafer.Host_Job_Id = wafer.Job_Id;
+                                                wafer.MapFlag = true;
+                                                //MappingData.Add(wafer);
+                                                break;
+                                            case '?':
+                                                wafer.Job_Id = "Undefined";
+                                                wafer.Host_Job_Id = wafer.Job_Id;
+                                                wafer.MapFlag = true;
+                                                //MappingData.Add(wafer);
+                                                break;
+                                            case 'W':
+                                                wafer.Job_Id = "Double";
+                                                wafer.Host_Job_Id = wafer.Job_Id;
+                                                wafer.MapFlag = true;
+                                                //MappingData.Add(wafer);
+                                                break;
+                                        }
+                                        if (!Node.AddJob(wafer.Slot, wafer))
+                                        {
+                                            Job org = Node.GetJob(wafer.Slot);
+                                            JobManagement.Remove(org.Job_Id);
+                                            Node.RemoveJob(wafer.Slot);
+                                            Node.AddJob(wafer.Slot, wafer);
+                                        }
+
+                                    }
+                                    Node.IsMapping = true;
+                                    break;
+                            }
+
+
+                            break;
+                        case "Robot":
+
+                            if (!_Mode.Equals("Stop"))
+                            {
+                                switch (Node.Phase)
+                                {
+                                    case "1":
+
+                                        break;
+                                    case "2":
+
+                                        //取得腳本的下一步
+                                        foreach (Path eachPath in PathManagement.GetExcutePath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
+                                        {
+                                            if (!eachPath.ChangeToStatus.Equals(""))
+                                            {
+                                                TargetJob.CurrentState = eachPath.ChangeToStatus;
+                                            }
+                                            foreach (Path.Action eachAction in eachPath.TodoList)
+                                            {
+                                                TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
+                                            }
+                                            break;
+                                        }
+
+                                        break;
+                                    case "3":
+
+                                        break;
+                                }
+
+                            }
+                            break;
+                        case "Aligner":
+                        case "OCR":
+
+                            if (!_Mode.Equals("Stop"))
+                            {
+                                //TargetJob = Txn.TargetJobs[0];
+                                foreach (Path eachPath in PathManagement.GetExcutePath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
+                                {
+                                    if (!eachPath.Expression.Equals(""))
+                                    {
+                                        switch (eachPath.Expression)
+                                        {
+                                            case "[Job.AlignerFlag] == true":
+                                                if (!TargetJob.AlignerFlag)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                            case "[Job.AlignerFlag] == false":
+                                                if (TargetJob.AlignerFlag)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                            case "[Job.OCRFlag] == true":
+                                                if (!TargetJob.OCRFlag)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                            case "[Job.OCRFlag] == false":
+                                                if (TargetJob.OCRFlag)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                            case "[Job.AlignerFinished] == true":
+                                                if (!TargetJob.AlignerFinished)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                            case "[Job.AlignerFinished] == false":
+                                                if (TargetJob.AlignerFinished)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                        }
+                                    }
+
+                                    if (!eachPath.ChangeToStatus.Equals(""))
+                                    {
+                                        TargetJob.CurrentState = eachPath.ChangeToStatus;
+                                    }
+                                    foreach (Path.Action eachAction in eachPath.TodoList)
+                                    {
+                                        TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
+                                    }
+                                    break;
+                                }
+                            }
+                            break;
+
+                    }
+                    _EngReport.On_Command_Excuted(Node, Txn, Msg);
+
 
                     if (TargetJob.Job_Id.Equals("dummy") && !Txn.ScriptName.Equals(""))
                     {
@@ -1424,158 +1572,164 @@ namespace TransferControl.Engine
             try
             {
                 Job TargetJob = null;
-                
-                switch (Node.Type)
-                {
-                    case "Robot":
-                        UpdateJobLocation(Node, Txn);
-                        UpdateNodeStatus(Node, Txn);
-                        if (!_Mode.Equals("Stop"))
-                        {
-                            switch (Node.Phase)
-                            {
-                                case "1":
-                                    RobotFetchMode(Node, Txn.ScriptName, Txn.FormName);
-                                    break;
-                                case "2":
-                                    //TargetJob = Txn.TargetJobs[0];
-                                    List<Path> Paths = PathManagement.GetFinishPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method);
-
-
-                                    foreach (Path eachPath in Paths)
-                                    {
-                                        if (!eachPath.ChangeToStatus.Equals(""))
-                                        {
-                                            TargetJob.CurrentState = eachPath.ChangeToStatus;
-                                        }
-                                        foreach (Path.Action eachAction in eachPath.TodoList)
-                                        {
-                                            TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
-                                        }
-                                        break;
-                                    }
-
-                                    if ((Txn.Method.Equals(Transaction.Command.RobotType.Get) || Txn.Method.Equals(Transaction.Command.RobotType.GetAfterWait) || Txn.Method.Equals(Transaction.Command.RobotType.Put) || Txn.Method.Equals(Transaction.Command.RobotType.PutBack)) && ((Node.AllDone && Node.JobList.Count == 2) || (Node.AllDone && Node.WaitForCarryCount == 0)) && Node.Phase == "2" && Node.JobList.Count != 0)
-                                    {//拿好拿滿就去放片吧
-                                        logger.Debug("拿好拿滿就去放片吧");
-                                        Node.Phase = "3";
-                                        RobotPutMode(Node, Txn.ScriptName, Txn.FormName);
-                                    }
-                                    break;
-                                case "3":
-                                    RobotPutMode(Node, Txn.ScriptName, Txn.FormName);
-                                    break;
-                            }
-                        }
-
-                        break;
-                    case "Aligner":
-                    case "OCR":
-                        UpdateNodeStatus(Node, Txn);
-                        if (Node.Type.Equals("OCR"))
-                        {
-                            //Update Wafer ID by OCR result
-                            if (Txn.Method.Equals(Transaction.Command.OCRType.Read))
-                            {
-                                if (Txn.TargetJobs.Count != 0)
-                                {
-                                    Txn.TargetJobs[0].Host_Job_Id = Msg.Value.Replace("[", "").Replace("]", "").Split(',')[0];
-                                    _EngReport.On_Job_Location_Changed(Txn.TargetJobs[0]);
-                                }
-                            }
-                        }
-                        if (!_Mode.Equals("Stop"))
-                        {
-                            //TargetJob = Txn.TargetJobs[0];
-                            foreach (Path eachPath in PathManagement.GetFinishPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
-                            {
-                                if (!eachPath.Expression.Equals(""))
-                                {
-                                    switch (eachPath.Expression)
-                                    {
-                                        case "[Job.AlignerFlag] == true":
-                                            if (!TargetJob.AlignerFlag)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                        case "[Job.AlignerFlag] == false":
-                                            if (TargetJob.AlignerFlag)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                        case "[Job.OCRFlag] == true":
-                                            if (!TargetJob.OCRFlag)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                        case "[Job.OCRFlag] == false":
-                                            if (TargetJob.OCRFlag)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                        case "[Job.AlignerFinished] == true":
-                                            if (!TargetJob.AlignerFinished)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                        case "[Job.AlignerFinished] == false":
-                                            if (TargetJob.AlignerFinished)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                    }
-                                }
-
-                                if (!eachPath.ChangeToStatus.Equals(""))
-                                {
-                                    TargetJob.CurrentState = eachPath.ChangeToStatus;
-                                }
-                                foreach (Path.Action eachAction in eachPath.TodoList)
-                                {
-                                    TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
-                                }
-                                break;
-                            }
-                        }
-                        else
-                        {
-
-                        }
-                        break;
-                    case "LoadPort":
-                        UpdateNodeStatus(Node, Txn);
-                        switch (Txn.Method)
-                        {
-                            case Transaction.Command.LoadPortType.MappingLoad:
-                                Node.IsMapping = true;
-                                break;
-                            case Transaction.Command.LoadPortType.Unload:
-                            case Transaction.Command.LoadPortType.MappingUnload:
-                            case Transaction.Command.LoadPortType.UnDock:
-
-                                _EngReport.On_Node_State_Changed(Node, "UnLoad Complete");
-                                break;
-                            case Transaction.Command.LoadPortType.InitialPos:
-                            case Transaction.Command.LoadPortType.ForceInitialPos:
-                                _EngReport.On_Node_State_Changed(Node, "Ready To Load");
-                                break;
-                        }
-                        break;
-                }
-                _EngReport.On_Command_Finished(Node, Txn, Msg);
-
-
                 if (Txn.TargetJobs.Count != 0)
                 {
                     TargetJob = Txn.TargetJobs[0];
                     logger.Debug("On_Command_Finished:" + Txn.Method + ":" + Txn.Method);
-                    Node.InterLock = false;
+                    switch (Node.Type)
+                    {
+                        case "Robot":
+                            UpdateJobLocation(Node, Txn);
+                            UpdateNodeStatus(Node, Txn);
+                            if (!_Mode.Equals("Stop"))
+                            {
+                                switch (Node.Phase)
+                                {
+                                    case "1":
+                                        //進入取片階段
+                                        RobotFetchMode(Node, Txn.ScriptName, Txn.FormName);
+                                        break;
+                                    case "2":
+                                        //進入處理階段
+                                        //TargetJob = Txn.TargetJobs[0];
+                                        List<Path> Paths = PathManagement.GetFinishPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method);
+
+                                        //取得腳本的下一步
+                                        foreach (Path eachPath in Paths)
+                                        {
+                                            if (!eachPath.ChangeToStatus.Equals(""))
+                                            {
+                                                TargetJob.CurrentState = eachPath.ChangeToStatus;
+                                            }
+                                            foreach (Path.Action eachAction in eachPath.TodoList)
+                                            {
+                                                TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
+                                            }
+                                            break;
+                                        }
+
+                                        if ((Txn.Method.Equals(Transaction.Command.RobotType.Get) || Txn.Method.Equals(Transaction.Command.RobotType.GetAfterWait) || Txn.Method.Equals(Transaction.Command.RobotType.Put) || Txn.Method.Equals(Transaction.Command.RobotType.PutBack)) && ((Node.AllDone && Node.JobList.Count == 2) || (Node.AllDone && Node.WaitForCarryCount == 0)) && Node.Phase == "2" && Node.JobList.Count != 0)
+                                        {//拿好拿滿就去放片吧
+                                            logger.Debug("拿好拿滿就去放片吧");
+                                            Node.Phase = "3";
+                                            RobotPutMode(Node, Txn.ScriptName, Txn.FormName);
+                                        }
+                                        break;
+                                    case "3":
+                                        //進入放片階段
+                                        RobotPutMode(Node, Txn.ScriptName, Txn.FormName);
+                                        break;
+                                }
+                            }
+
+                            break;
+                        case "Aligner":
+                        case "OCR":
+                            UpdateNodeStatus(Node, Txn);
+                            if (Node.Type.Equals("OCR"))
+                            {
+                                //Update Wafer ID by OCR result
+                                if (Txn.Method.Equals(Transaction.Command.OCRType.Read))
+                                {
+                                    if (Txn.TargetJobs.Count != 0)
+                                    {
+                                        Txn.TargetJobs[0].Host_Job_Id = Msg.Value.Replace("[", "").Replace("]", "").Split(',')[0];
+                                        _EngReport.On_Job_Location_Changed(Txn.TargetJobs[0]);
+                                    }
+                                }
+                            }
+                            if (!_Mode.Equals("Stop"))
+                            {
+                                //TargetJob = Txn.TargetJobs[0];
+                                foreach (Path eachPath in PathManagement.GetFinishPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
+                                {
+                                    if (!eachPath.Expression.Equals(""))
+                                    {
+                                        switch (eachPath.Expression)
+                                        {
+                                            case "[Job.AlignerFlag] == true":
+                                                if (!TargetJob.AlignerFlag)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                            case "[Job.AlignerFlag] == false":
+                                                if (TargetJob.AlignerFlag)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                            case "[Job.OCRFlag] == true":
+                                                if (!TargetJob.OCRFlag)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                            case "[Job.OCRFlag] == false":
+                                                if (TargetJob.OCRFlag)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                            case "[Job.AlignerFinished] == true":
+                                                if (!TargetJob.AlignerFinished)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                            case "[Job.AlignerFinished] == false":
+                                                if (TargetJob.AlignerFinished)
+                                                {
+                                                    continue;
+                                                }
+                                                break;
+                                        }
+                                    }
+
+                                    if (!eachPath.ChangeToStatus.Equals(""))
+                                    {
+                                        TargetJob.CurrentState = eachPath.ChangeToStatus;
+                                    }
+                                    foreach (Path.Action eachAction in eachPath.TodoList)
+                                    {
+                                        TodoAction(Txn.ScriptName, eachAction, Txn.TargetJobs, Node, Txn.FormName);
+                                    }
+                                    break;
+                                }
+                            }
+                            else
+                            {
+
+                            }
+                            break;
+                        case "LoadPort":
+                            UpdateNodeStatus(Node, Txn);
+                            switch (Txn.Method)
+                            {
+                                case Transaction.Command.LoadPortType.MappingLoad:
+
+                                    break;
+                                case Transaction.Command.LoadPortType.Unload:
+                                case Transaction.Command.LoadPortType.MappingUnload:
+                                case Transaction.Command.LoadPortType.UnDock:
+
+                                    _EngReport.On_Node_State_Changed(Node, "UnLoad Complete");
+                                    break;
+                                case Transaction.Command.LoadPortType.InitialPos:
+                                case Transaction.Command.LoadPortType.ForceInitialPos:
+                                    _EngReport.On_Node_State_Changed(Node, "Ready To Load");
+                                    break;
+                            }
+                            break;
+                    }
+                    _EngReport.On_Command_Finished(Node, Txn, Msg);
+
+
+
+                    if (!Node.Type.Equals("LoadPort"))//LoadPort 只能在Mapping完成後關閉安全鎖
+                    {
+                        Node.InterLock = false;
+                    }
                     if (TargetJob.Job_Id.Equals("dummy") && !Txn.ScriptName.Equals(""))
                     {
                         if (Txn.LastOneScript)
@@ -1623,10 +1777,14 @@ namespace TransferControl.Engine
             //logger.Debug("On_Command_Finished ProcessTime:" + elapsedMs.ToString());
 
 
-           
+
 
         }
-
+        /// <summary>
+        /// 更新Node狀態
+        /// </summary>
+        /// <param name="Node"></param>
+        /// <param name="Txn"></param>
         private void UpdateNodeStatus(Node Node, Transaction Txn)
         {
 
@@ -1758,7 +1916,11 @@ namespace TransferControl.Engine
             //logger.Debug(JsonConvert.SerializeObject(Node));
 
         }
-
+        /// <summary>
+        /// 更新Wafer位置
+        /// </summary>
+        /// <param name="Node"></param>
+        /// <param name="Txn"></param>
         private void UpdateJobLocation(Node Node, Transaction Txn)
         {
             if (Txn.TargetJobs != null)
@@ -1782,6 +1944,7 @@ namespace TransferControl.Engine
                                 Node TargetNode5 = NodeManagement.Get(Txn.TargetJobs[i].Position);
                                 Job tmp;
                                 TargetNode5.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
+                                //LoadPort 空的Slot要塞假資料
                                 if (TargetNode5.Type.Equals("LoadPort"))
                                 {
                                     tmp = new Job();
@@ -1837,6 +2000,7 @@ namespace TransferControl.Engine
                                 Node TargetNode4 = NodeManagement.Get(Txn.TargetJobs[i].Position);
                                 Job tmp;
                                 TargetNode4.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
+                                //LoadPort 空的Slot要塞假資料
                                 if (TargetNode4.Type.Equals("LoadPort"))
                                 {
                                     tmp = new Job();
@@ -1923,40 +2087,11 @@ namespace TransferControl.Engine
             }
 
         }
-
-        //private bool IsTaskFinish()
-        //{
-        //    bool result = true;
-        //    //檢查Used port裡是否還有未取的
-        //    foreach (Node port in NodeManagement.GetLoadPortList())
-        //    {
-        //        if (port.Used)
-        //        {
-        //            var find = from job in port.JobList.Values
-        //                          where !job.ProcessFlag && job.MapFlag
-        //                          select job;
-
-        //            if (find.Count() != 0)
-        //            {
-        //                result = false;
-        //            }
-        //        }
-        //    }
-        //    //檢查Aligner Robot是否還有片
-
-        //            var findJob = from job in JobManagement.GetJobList()
-        //                          where job.Position.IndexOf("LoadPort") == -1
-        //                          select job;
-
-        //            if (findJob.Count() != 0)
-        //            {
-        //                result = false;
-        //            }
-
-
-        //    return result;
-        //}
-
+        /// <summary>
+        /// 命令超時
+        /// </summary>
+        /// <param name="Node"></param>
+        /// <param name="Txn"></param>
         public void On_Command_TimeOut(Node Node, Transaction Txn)
         {
             logger.Debug("Transaction TimeOut:" + Txn.CommandEncodeStr);
@@ -1967,7 +2102,11 @@ namespace TransferControl.Engine
             Node.State = "Alarm";
             _EngReport.On_Command_TimeOut(Node, Txn);
         }
-
+        /// <summary>
+        /// 事件觸發
+        /// </summary>
+        /// <param name="Node"></param>
+        /// <param name="Msg"></param>
         public void On_Event_Trigger(Node Node, ReturnMessage Msg)
         {
             try
@@ -1994,7 +2133,11 @@ namespace TransferControl.Engine
             }
 
         }
-
+        /// <summary>
+        /// Controller狀態變更
+        /// </summary>
+        /// <param name="Device_ID"></param>
+        /// <param name="Status"></param>
         public void On_Controller_State_Changed(string Device_ID, string Status)
         {
 
@@ -2003,7 +2146,11 @@ namespace TransferControl.Engine
         }
 
 
-
+        /// <summary>
+        /// Node機況變更
+        /// </summary>
+        /// <param name="Node"></param>
+        /// <param name="Status"></param>
         public void On_Node_State_Changed(Node Node, string Status)
         {
             if (!Node.State.Equals("Alarm") && Status.Equals("Alarm"))
@@ -2013,7 +2160,12 @@ namespace TransferControl.Engine
             Node.State = Status;
             _EngReport.On_Node_State_Changed(Node, Status);
         }
-
+        /// <summary>
+        /// 命令執行發生錯誤
+        /// </summary>
+        /// <param name="Node"></param>
+        /// <param name="Txn"></param>
+        /// <param name="Msg"></param>
         public void On_Command_Error(Node Node, Transaction Txn, ReturnMessage Msg)
         {
             if (!Node.State.Equals("Alarm"))

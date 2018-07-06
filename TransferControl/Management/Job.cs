@@ -12,7 +12,6 @@ namespace TransferControl.Management
         public string Job_Id { get; set; }
         public string Host_Job_Id { get; set; }
         public bool ProcessFlag { get; set; }
-        public int Piority { get; set; }
         public bool AlignerFlag { get; set; }
         public bool OCRFlag { get; set; }
         public bool AlignerFinished { get; set; }
@@ -25,7 +24,6 @@ namespace TransferControl.Management
         public string LastNode { get; set; }
         public string CurrentState { get; set; }
         public string WaitToDo { get; set; }
-        public string FetchRobot { get; set; }
         public string ProcessNode { get; set; }
         public bool MapFlag { get; set; }
         public int Offset { get; set; }

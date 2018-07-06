@@ -15,47 +15,149 @@ namespace TransferControl.Management
     {
 
         ILog logger = LogManager.GetLogger(typeof(Node));
+        /// <summary>
+        /// 名稱
+        /// </summary>
         public string Name { get; set; }
+        /// <summary>
+        /// 目前使用的Controoler名稱
+        /// </summary>
         public string Controller { get; set; }
+        /// <summary>
+        /// Address Number
+        /// </summary>
         public string AdrNo { get; set; }
+        /// <summary>
+        /// Node 類型
+        /// </summary>
         public string Type { get; set; }
+        /// <summary>
+        /// 廠牌
+        /// </summary>
         public string Brand { get; set; }
+        /// <summary>
+        /// LoadPort專用，目前取片中
+        /// </summary>
         public bool Used { get; set; }
-        public bool Finished { get; set; }
+        /// <summary>
+        /// Robot專用，搬送階段
+        /// </summary>
         public string Phase { get; set; }
+        /// <summary>
+        /// Robot專用，取片階段用於標記Foup
+        /// </summary>
         public string CurrentLoadPort { get; set; }
-        public string LockByNode { get; set; }
+        /// <summary>
+        /// Robot專用，目前手臂的位置
+        /// </summary>
         public string CurrentPosition { get; set; }
-        public string CurrentWaitNode { get; set; }
+        /// <summary>
+        /// 啟用或停用此Node
+        /// </summary>
         public bool Enable { get; set; }
+        /// <summary>
+        /// Robot專用，未來需要此Robot，還沒有搬送的數量
+        /// </summary>
         public int WaitForCarryCount { get; set; }
+        /// <summary>
+        /// LoadPort用於標記準備完成狀態，Aligner用於標記可否放片
+        /// </summary>
         public bool Available { get; set; }
+        /// <summary>
+        /// 處理階段用於放片鎖定
+        /// </summary>
         public bool PutAvailable { get; set; }
+        /// <summary>
+        /// 處理階段用於標記Robot可否去Aligner取片
+        /// </summary>
         public bool GetAvailable { get; set; }
+        /// <summary>
+        /// 鎖定Robot不能執行其他命令
+        /// </summary>
         public bool GetMutex { get; set; }
+        /// <summary>
+        /// LoadPort用於標記True為目前不能取放片，其他裝置用於標記True為正在執行命令中
+        /// </summary>
         public bool InterLock { get; set; }
+        /// <summary>
+        /// 目前機況
+        /// </summary>
         public string State { get; set; }
+        /// <summary>
+        /// 上一次的機況
+        /// </summary>
         public string LastState { get; set; }
-        public string StatusInfo { get; set; }
+        /// <summary>
+        /// LoadPort專用，標記LD/UD/LU
+        /// </summary>
         public string Mode { get; set; }
+        /// <summary>
+        /// 標記是否被預約執行命令中
+        /// </summary>
         public bool Reserve { get; set; }
+        /// <summary>
+        /// 手臂伸出中
+        /// </summary>
         public bool PutOut { get; set; }
+        /// <summary>
+        /// 由Wafer鎖定直到完成該Wafer所要求的命令
+        /// </summary>
         public string UnLockByJob { get; set; }
+        /// <summary>
+        /// 紀錄伸出的是哪支手臂
+        /// </summary>
         public string PutOutArm { get; set; }
+        /// <summary>
+        /// 手臂上的Wafer都做完了
+        /// </summary>
         public bool AllDone { get; set; }
+        /// <summary>
+        /// 是否需要Initial
+        /// </summary>
         public bool InitialComplete { get; set; }
+        /// <summary>
+        /// LoadPort專用，Mapping完成
+        /// </summary>
         public bool IsMapping { get; set; }
+        /// <summary>
+        /// LoadPort專用，目前可以取片
+        /// </summary>
         public bool Fetchable { get; set; }
-        public bool Release { get; set; }
-        public bool HasAlarm { get; set; }
+        /// <summary>
+        /// 標記為虛擬裝置
+        /// </summary>
         public bool ByPass { get; set; }
+        /// <summary>
+        /// LoadPort專用，標記已經按過OP按鈕
+        /// </summary>
         public bool FoupReady { get; set; }
+        /// <summary>
+        /// LoadPort專用，紀錄Demo模式Wafer所指定的目的地Foup
+        /// </summary>
         public string DestPort { get; set; }
+        /// <summary>
+        /// Robot專用，預設使用的Aligner
+        /// </summary>
         public string DefaultAligner { get; set; }
+        /// <summary>
+        /// Robot專用，次要使用的Aligner
+        /// </summary>
         public string AlternativeAligner { get; set; }
+        /// <summary>
+        /// LoadPort專用，Foup Load的時間
+        /// </summary>
         public DateTime LoadTime { get; set; }
+        /// <summary>
+        /// LoadPort專用，其他Port Assign用
+        /// </summary>
         public ConcurrentDictionary<string, Job> ReserveList { get; set; }
+        /// <summary>
+        /// 在席列表
+        /// </summary>
         public ConcurrentDictionary<string, Job> JobList { get; set; }
+        /// <summary>
+        /// 路徑表
+        /// </summary>
         public List<Route> RouteTable { get; set; }
 
 
@@ -78,8 +180,8 @@ namespace TransferControl.Management
                 Phase = "2";
             }
             CurrentLoadPort = "";
-            LockByNode = "";
-            CurrentWaitNode = "";
+           
+          
             CurrentPosition = "";
             PutOutArm = "";
             UnLockByJob = "";
@@ -88,7 +190,7 @@ namespace TransferControl.Management
                 State = "Ready To Load";
             }
             LastState = "";
-            StatusInfo = "";
+    
             PutOut = false;
             PutAvailable = true;
             GetAvailable = true;
@@ -98,10 +200,10 @@ namespace TransferControl.Management
             AllDone = false;
             Available = true;
             Enable = true;
-            Release = true;
-            HasAlarm = false;
+          
+           
             Used = false;
-            Finished = false;
+      
             if (Type == "LoadPort")
             {
                 Available = false;
@@ -113,7 +215,12 @@ namespace TransferControl.Management
             LoadTime = new DateTime();
 
         } 
-
+        /// <summary>
+        /// 執行命令腳本
+        /// </summary>
+        /// <param name="ScriptName"></param>
+        /// <param name="FormName"></param>
+        /// <param name="Force"></param>
         public void ExcuteScript(string ScriptName, string FormName, bool Force = false)
         {
             CommandScript StartCmd = CommandScriptManagement.GetStart(ScriptName);
@@ -137,7 +244,12 @@ namespace TransferControl.Management
                 SendCommand(txn, Force);
             }
         }
-
+        /// <summary>
+        /// 執行命令腳本(帶參數)
+        /// </summary>
+        /// <param name="ScriptName"></param>
+        /// <param name="FormName"></param>
+        /// <param name="Force"></param>
         public void ExcuteScript(string ScriptName, string FormName, Dictionary<string, string> Param)
         {
             CommandScriptManagement.ReloadScriptWithParam(ScriptName, Param);
@@ -162,7 +274,12 @@ namespace TransferControl.Management
                 SendCommand(txn);
             }
         }
-
+        /// <summary>
+        /// 傳送命令
+        /// </summary>
+        /// <param name="txn"></param>
+        /// <param name="Force"></param>
+        /// <returns></returns>
         public bool SendCommand(Transaction txn, bool Force = false)
         {
             //var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -606,7 +723,7 @@ namespace TransferControl.Management
                 }
                 if (txn.CommandType.Equals("CMD") || txn.CommandType.Equals("MOV"))
                 {
-                    
+                    this.InitialComplete = false;
                     if ((this.InterLock || !(this.UnLockByJob.Equals(TargetJob.Job_Id) || this.UnLockByJob.Equals(""))) && !Force)
                     {
                         ReturnMessage tmp = new ReturnMessage();

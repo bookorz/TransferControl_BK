@@ -78,6 +78,7 @@
     <Compile Include="Management\Path.cs" />
     <Compile Include="Management\PathManagement.cs" />
     <Compile Include="Management\Transaction.cs" />
+    <Compile Include="Management\TransactionRecord.cs" />
     <Compile Include="Parser\IParser.cs" />
     <Compile Include="Parser\MessageParser.cs" />
     <Compile Include="Parser\SanwaParser.cs" />
