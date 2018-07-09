@@ -738,6 +738,14 @@ namespace TransferControl.Management
                         this.InterLock = true;
                     }
                 }
+                if (txn.TargetJobs.Count == 0)
+                {
+                    
+                    Job dummy = new Job();
+                    dummy.Job_Id = "dummy";
+                    txn.TargetJobs.Add(dummy);
+
+                }
                 if (Ctrl.DoWork(txn))
                 {
 
