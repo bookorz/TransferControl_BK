@@ -235,11 +235,11 @@ namespace TransferControl.Management
                 txn.Slot = StartCmd.Slot;
                 txn.Value = StartCmd.Value;
                 txn.ScriptIndex = StartCmd.Index;
-                List<Job> dummyJob = new List<Job>();
-                Job dummy = new Job();
-                dummy.Job_Id = "dummy";
-                dummyJob.Add(dummy);
-                txn.TargetJobs = dummyJob;
+                //List<Job> dummyJob = new List<Job>();
+                //Job dummy = new Job();
+                //dummy.Job_Id = "dummy";
+                //dummyJob.Add(dummy);
+                //txn.TargetJobs = dummyJob;
                 logger.Debug("Excute Script:" + ScriptName + " Method:" + txn.Method);
                 SendCommand(txn, Force);
             }
@@ -265,11 +265,11 @@ namespace TransferControl.Management
                 txn.Slot = StartCmd.Slot;
                 txn.Value = StartCmd.Value;
                 txn.ScriptIndex = StartCmd.Index;
-                List<Job> dummyJob = new List<Job>();
-                Job dummy = new Job();
-                dummy.Job_Id = "dummy";
-                dummyJob.Add(dummy);
-                txn.TargetJobs = dummyJob;
+                //List<Job> dummyJob = new List<Job>();
+                //Job dummy = new Job();
+                //dummy.Job_Id = "dummy";
+                //dummyJob.Add(dummy);
+                //txn.TargetJobs = dummyJob;
                 logger.Debug("Excute Script:" + ScriptName + " Method:" + txn.Method);
                 SendCommand(txn);
             }
