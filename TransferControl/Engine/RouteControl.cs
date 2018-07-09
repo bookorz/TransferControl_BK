@@ -24,6 +24,7 @@ namespace TransferControl.Engine
         IEngineReport _EngReport;
         int LapsedWfCount = 0;
         int LapsedLotCount = 0;
+        string EqpState = "";
 
         public int SpinWaitTimeOut = 99999000;
 
@@ -233,7 +234,8 @@ namespace TransferControl.Engine
                         else
                         {
                             logger.Debug("可用Foup出現");
-                            _EngReport.On_Eqp_State_Changed("Run");
+                            _EngReport.On_Eqp_State_Changed(EqpState,"Run");
+                            EqpState = "Run";
                         }
                         break;
                     }
@@ -305,9 +307,10 @@ namespace TransferControl.Engine
                 SpinWait.SpinUntil(() => CheckCycle() || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待搬運週期完成
                 TimeSpan diff = DateTime.Now - StartTime;
                 logger.Info("Process Time: " + diff.TotalSeconds);
+                _EngReport.On_Eqp_State_Changed(EqpState, "Idle");
                 _EngReport.On_Task_Finished(FormName.ToString(), diff.TotalSeconds.ToString(), LapsedWfCount, LapsedLotCount);
                 logger.Debug("搬運週期完成，下個周期開始");
-                _EngReport.On_Eqp_State_Changed("Idle");
+                
                 LapsedWfCount = 0;
                 LapsedLotCount = 0;
             }
@@ -433,6 +436,7 @@ namespace TransferControl.Engine
                                  where Job.Position.IndexOf("Robot") != -1 || Job.Position.IndexOf("Aligner") != -1
                                  select Job).Count() == 0)
                             {
+                                PortNode.Used = false;
                                 _EngReport.On_Port_Finished(PortNode.Name, FormName);
                             }
                         }

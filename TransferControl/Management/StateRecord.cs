@@ -81,7 +81,7 @@ namespace TransferControl.Management
             try
             {
 
-                string SQL = @"replace into eqp_current_state (eqp_Name,node_state,update_time)
+                string SQL = @"replace into eqp_current_state (eqp_Name,eqp_state,update_time)
                                     values(@eqp_Name,@eqp_state,@update_time)";
 
                 keyValues.Add("@eqp_Name", EqpName);
@@ -114,10 +114,10 @@ namespace TransferControl.Management
         {
             DBUtil dBUtil = new DBUtil();
             Dictionary<string, object> keyValues = new Dictionary<string, object>();
-            string SQL = @"insert into eqp_state_history (node_name,old_state,new_state,Update_time)
-                            values(@node_name,@old_state,@new_state,@update_time)";
+            string SQL = @"insert into eqp_state_history (eqp_name,old_state,new_state,Update_time)
+                            values(@eqp_name,@old_state,@new_state,@update_time)";
 
-            keyValues.Add("@node_name", EqpName);
+            keyValues.Add("@eqp_name", EqpName);
             keyValues.Add("@old_state", OldState);
             keyValues.Add("@new_state", NewState);
             keyValues.Add("@update_time", UpdateTime);
