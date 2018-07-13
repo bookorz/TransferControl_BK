@@ -1,5 +1,9 @@
-﻿using System;
+﻿using log4net;
+using Newtonsoft.Json;
+using SANWA.Utility;
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,25 +16,33 @@ namespace TransferControl.Management
     {
 
         public static Dictionary<string, List<Path>> ScriptList = new Dictionary<string, List<Path>>();
+        static ILog logger = LogManager.GetLogger(typeof(PathManagement));
 
+        private static DBUtil dBUtil = new DBUtil();
         public static void LoadConfig()
         {
 
-            foreach (string FilePath in Directory.GetFiles("config/Script"))
-            {
-                if (!System.IO.Path.GetExtension(FilePath).ToUpper().Equals(".JSON"))
-                {
-                    continue;
-                }
-                ConfigTool<Path> DeviceCfg = new ConfigTool<Path>();
-                List<Path> tmp = new List<Path>();
-                foreach (Path each in DeviceCfg.ReadFileByList(FilePath))
-                {
+            string Sql = @"select * from config_transfer_script";
+            DataTable dt = dBUtil.GetDataTable(Sql, null);
+            string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);
+            str_json = str_json.Replace("\"[", "[").Replace("]\"", "]").Replace("\\\"", "\"").Replace("\\r\\n","");
+            List<Path> cmdScpList = JsonConvert.DeserializeObject<List<Path>>(str_json);
+            List<Path> tmp;
 
+            foreach (Path each in cmdScpList)
+            {
+                if (ScriptList.TryGetValue(each.ID, out tmp))
+                {
                     tmp.Add(each);
                 }
+                else
+                {
+                    tmp = new List<Path>();
+                    tmp.Add(each);
+                    ScriptList.Add(each.ID, tmp);
+                }
 
-                ScriptList.Add(System.IO.Path.GetFileNameWithoutExtension(FilePath), tmp);
+
             }
         }
         public static List<Path> GetFinishPath(string ScriptName, string JobStatus, string FinishMethod)

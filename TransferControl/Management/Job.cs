@@ -11,16 +11,19 @@ namespace TransferControl.Management
         public string Slot { get; set; }
         public string Job_Id { get; set; }
         public string Host_Job_Id { get; set; }
+        public bool NeedProcess { get; set; }
         public bool ProcessFlag { get; set; }
         public bool AlignerFlag { get; set; }
         public bool OCRFlag { get; set; }
         public bool AlignerFinished { get; set; }
         public bool OCRFinished { get; set; }
+        public string OCRImgPath { get; set; }
         public string Position { get; set; }
         public string FromPort { get; set; }
-        public string Destination { get; set; }
-        public string DisplayDestination { get; set; }
-        public string DestinationSlot { get; set; }
+        public string FromPortSlot { get; set; }
+        public string Destination { get;  private set ; }
+        public string DisplayDestination { get; private set; }
+        public string DestinationSlot { get; private set; }
         public string LastNode { get; set; }
         public string CurrentState { get; set; }
         public string WaitToDo { get; set; }
@@ -28,6 +31,7 @@ namespace TransferControl.Management
         public bool MapFlag { get; set; }
         public int Offset { get; set; }
         public int Angle { get; set; }
+        public DateTime AssignTime { get; private set; }
 
         public Job()
         {
@@ -35,11 +39,29 @@ namespace TransferControl.Management
             WaitToDo = "";
             Destination = "";
             DestinationSlot = "";
-            ProcessFlag = true;
+            OCRImgPath = "";
+            ProcessFlag = false;
             MapFlag = false;
             Angle = 270;
             AlignerFlag = true;
+            NeedProcess = false;
             OCRFlag = true;
+        }
+
+        public void AssignPort(string Position , string Slot)
+        {
+            this.Destination = Position;
+            this.DisplayDestination = Position.Replace("Load","");
+            this.DestinationSlot = Slot;
+            this.AssignTime = DateTime.Now;
+        }
+
+        public void UnAssignPort()
+        {
+            this.Destination = "";
+            this.DisplayDestination = "";
+            this.DestinationSlot = "";
+            
         }
 
         public class State

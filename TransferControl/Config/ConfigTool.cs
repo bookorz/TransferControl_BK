@@ -28,7 +28,7 @@ namespace TransferControl.Config
             return result;
         }
 
-        public List<T> ReadFileByList(string FilePath,Dictionary<string,string> Param)
+        public List<T> ReadFileByList(string FilePath, Dictionary<string, string> Param)
         {
             List<T> result = null;
             try
@@ -38,7 +38,7 @@ namespace TransferControl.Config
                 foreach (string each in Param.Keys)
                 {
                     Param.TryGetValue(each, out val);
-                    t = t.Replace(each,val);
+                    t = t.Replace(each, val);
                 }
                 result = JsonConvert.DeserializeObject<List<T>>(t);
             }
@@ -52,7 +52,7 @@ namespace TransferControl.Config
 
         public T ReadFile(string FilePath)
         {
-            
+
             try
             {
                 string t = File.ReadAllText(FilePath, Encoding.UTF8);

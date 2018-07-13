@@ -1,7 +1,11 @@
 ﻿
+using log4net;
+using Newtonsoft.Json;
+using SANWA.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -13,6 +17,25 @@ namespace TransferControl.Management
     {
         private static ConcurrentDictionary<string, Node> NodeList = new ConcurrentDictionary<string, Node>();
         private static ConcurrentDictionary<string, Node> NodeListByCtrl = new ConcurrentDictionary<string, Node>();
+        static ILog logger = LogManager.GetLogger(typeof(NodeManagement));
+
+        private static DBUtil dBUtil = new DBUtil();
+
+        public static void LoadConfig()
+        {
+            string Sql = @"SELECT t.node_id AS name,t.controller_id AS controller,t.conn_address AS adrno, t.node_type AS TYPE,t.vendor AS brand,t.bypass,1 AS Enable,t.default_aligner AS defaultaligner,t.alternative_aligner AS alternativealigner,t.route_table AS routetable
+                                FROM config_node t";
+            DataTable dt = dBUtil.GetDataTable(Sql, null);
+            string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);
+            str_json = str_json.Replace("\"[", "[").Replace("]\"", "]").Replace("\\\"", "\"");
+            List<Node> nodeList = JsonConvert.DeserializeObject<List<Node>>(str_json);
+           
+            foreach (Node each in nodeList)
+            {
+                NodeList.TryAdd(each.Name, each);
+                NodeListByCtrl.TryAdd(each.Controller + each.AdrNo, each);
+            }
+        }
 
         public static void InitialNodes()
         {

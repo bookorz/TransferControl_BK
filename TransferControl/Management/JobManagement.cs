@@ -26,9 +26,7 @@ namespace TransferControl.Management
             {
                 foreach (Job j in findAssignJob)
                 {
-                    j.Destination = "";
-                    j.DestinationSlot = "";
-                    j.DisplayDestination = "";
+                    j.UnAssignPort();
                 }
             }
         }

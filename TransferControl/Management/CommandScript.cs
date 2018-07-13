@@ -8,6 +8,7 @@ namespace TransferControl.Management
 {
     public class CommandScript
     {
+        public string CommandScriptID { get; set; }
         public string ExcuteMethod { get; set; }
         public string FinishMethod { get; set; }
         public string Method { get; set; }

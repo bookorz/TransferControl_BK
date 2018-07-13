@@ -44,6 +44,14 @@ namespace TransferControl.Management
         /// </summary>
         public string Phase { get; set; }
         /// <summary>
+        /// 目前Foup的ID
+        /// </summary>
+        public string FoupID { get; set; }
+        /// <summary>
+        /// Process Request ID
+        /// </summary>
+        public string PrID { get; set; }
+        /// <summary>
         /// Robot專用，取片階段用於標記Foup
         /// </summary>
         public string CurrentLoadPort { get; set; }
@@ -175,22 +183,23 @@ namespace TransferControl.Management
             JobList = new ConcurrentDictionary<string, Job>();
             ReserveList = new ConcurrentDictionary<string, Job>();
             Phase = "1";
-            if(Type == "Aliger")
+            if (Type == "Aliger")
             {
                 Phase = "2";
             }
             CurrentLoadPort = "";
-           
-          
+            FoupID = "";
+            PrID = "";
             CurrentPosition = "";
             PutOutArm = "";
             UnLockByJob = "";
             State = "Idle";
-            if (Type.Equals("LoadPort")) {
+            if (Type.Equals("LoadPort"))
+            {
                 State = "Ready To Load";
             }
             LastState = "";
-    
+
             PutOut = false;
             PutAvailable = true;
             GetAvailable = true;
@@ -200,10 +209,10 @@ namespace TransferControl.Management
             AllDone = false;
             Available = true;
             Enable = true;
-          
-           
+
+
             Used = false;
-      
+
             if (Type == "LoadPort")
             {
                 Available = false;
@@ -214,7 +223,7 @@ namespace TransferControl.Management
             DestPort = "";
             LoadTime = new DateTime();
 
-        } 
+        }
         /// <summary>
         /// 執行命令腳本
         /// </summary>
@@ -283,14 +292,14 @@ namespace TransferControl.Management
         public bool SendCommand(Transaction txn, bool Force = false)
         {
             //var watch = System.Diagnostics.Stopwatch.StartNew();
-            
+
 
             bool result = false;
             try
             {
                 if (this.ByPass)
                 {
-                    logger.Debug("Command cancel,Cause "+this.Name+" in by pass mode.");
+                    logger.Debug("Command cancel,Cause " + this.Name + " in by pass mode.");
                     return true;
                 }
 
@@ -333,7 +342,7 @@ namespace TransferControl.Management
 
                 var findRoute = from rt in RouteTable
                                 where rt.NodeName.Equals(txn.Position)
-                               select rt;
+                                select rt;
                 if (findRoute.Count() != 0)
                 {
                     Route t = findRoute.First();
@@ -740,7 +749,7 @@ namespace TransferControl.Management
                 }
                 if (txn.TargetJobs.Count == 0)
                 {
-                    
+
                     Job dummy = new Job();
                     dummy.Job_Id = "dummy";
                     txn.TargetJobs.Add(dummy);

@@ -5,12 +5,46 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using log4net;
+using SANWA.Utility;
+using System.Data;
+using Newtonsoft.Json;
 
 namespace TransferControl.Management
 {
     public static class ControllerManagement
     {
+        static ILog logger = LogManager.GetLogger(typeof(ControllerManagement));
+        
+        private static DBUtil dBUtil = new DBUtil();
         private static ConcurrentDictionary<string, DeviceController> Controllers = new ConcurrentDictionary<string, DeviceController>();
+
+        public static void LoadConfig(ICommandReport Report)
+        {
+            string Sql = @"select t.node_function_name as DeviceName,t.node_function_type as DeviceType,
+                            case when t.conn_type = 'Socket' then  t.conn_address else '' end as IPAdress ,
+                            case when t.conn_type = 'Socket' then  CONVERT(t.conn_prot,SIGNED) else 0 end as Port ,
+                            case when t.conn_type = 'Comport' then   CONVERT(t.conn_prot,SIGNED) else 0 end as BaudRate ,
+                            case when t.conn_type = 'Comport' then  t.conn_address else '' end as PortName ,
+                            t.com_parity_bit as ParityBit,
+                            ifnull(CONVERT(t.com_data_bits,SIGNED),0) as DataBits,
+                            t.com_stop_bit as StopBit,
+                            t.conn_type as ConnectionType,
+                            t.enable_flg as Enable
+                            from config_controller t
+                            where t.controller_type = 'Equipment'";
+            DataTable dt = dBUtil.GetDataTable(Sql, null);
+            string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);
+
+            List<DeviceConfig> ctrlList = JsonConvert.DeserializeObject<List<DeviceConfig>>(str_json);
+           
+
+            foreach (DeviceConfig each in ctrlList)
+            {
+                DeviceController tmp = new DeviceController(each, Report);
+                Controllers.TryAdd(each.DeviceName, tmp);
+            }
+        }
 
         public static DeviceController Get(string Name)
         {

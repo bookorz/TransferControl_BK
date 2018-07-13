@@ -1,6 +1,10 @@
-﻿using System;
+﻿using log4net;
+using Newtonsoft.Json;
+using SANWA.Utility;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -11,43 +15,73 @@ namespace TransferControl.Management
 {
     public class CommandScriptManagement
     {
+        ILog logger = LogManager.GetLogger(typeof(CommandScriptManagement));
         static ConcurrentDictionary<string, List<CommandScript>> CommandScriptList = new ConcurrentDictionary<string, List<CommandScript>>();
-
+        private static DBUtil dBUtil = new DBUtil();
         public static void LoadConfig()
         {
 
-            foreach (string FilePath in Directory.GetFiles("config/CommandScript"))
-            {
-                if (!System.IO.Path.GetExtension(FilePath).ToUpper().Equals(".JSON"))
-                {
-                    continue;
-                }
-                ConfigTool<CommandScript> DeviceCfg = new ConfigTool<CommandScript>();
-                List<CommandScript> tmp = new List<CommandScript>();
-                foreach (CommandScript each in DeviceCfg.ReadFileByList(FilePath))
-                {
 
+            string Sql = @"SELECT * FROM config_command_script";
+            DataTable dt = dBUtil.GetDataTable(Sql, null);
+            string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);
+
+            List<CommandScript> cmdScpList = JsonConvert.DeserializeObject<List<CommandScript>>(str_json);
+            List<CommandScript> tmp;
+
+            foreach (CommandScript each in cmdScpList)
+            {
+                if (CommandScriptList.TryGetValue(each.CommandScriptID, out tmp))
+                {
                     tmp.Add(each);
                 }
+                else
+                {
+                    tmp = new List<CommandScript>();
+                    tmp.Add(each);
+                    CommandScriptList.TryAdd(each.CommandScriptID, tmp);
+                }
 
-                CommandScriptList.TryAdd(System.IO.Path.GetFileNameWithoutExtension(FilePath), tmp);
+
             }
-            
+
         }
 
         public static void ReloadScriptWithParam(string ScriptName, Dictionary<string, string> Param)
         {
-            List<CommandScript> Org;
-            if (CommandScriptList.TryGetValue(ScriptName,out Org))
+            Dictionary<string, object> keyValues = new Dictionary<string, object>();
+            string Sql = @"SELECT * FROM config_command_script where CommandScriptID = @scriptname";
+            keyValues.Add("@scriptname", ScriptName);
+            DataTable dt = dBUtil.GetDataTable(Sql, null);
+            string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);
+            foreach (string eachP in Param.Keys)
             {
-                ConfigTool<CommandScript> DeviceCfg = new ConfigTool<CommandScript>();
-                List<CommandScript> tmp = new List<CommandScript>();
-                foreach (CommandScript each in DeviceCfg.ReadFileByList("config/CommandScript/"+ ScriptName+".json",Param))
+                string val = "";
+                Param.TryGetValue(eachP, out val);
+                str_json = str_json.Replace(eachP, val);
+            }
+            List<CommandScript> cmdScpList = JsonConvert.DeserializeObject<List<CommandScript>>(str_json);
+            List<CommandScript> tmp;
+            CommandScriptList.TryRemove(ScriptName, out tmp);
+
+            foreach (CommandScript each in cmdScpList)
+            {
+                
+
+                if (CommandScriptList.TryGetValue(each.CommandScriptID, out tmp))
                 {
                     tmp.Add(each);
                 }
-                CommandScriptList.TryUpdate(ScriptName, tmp, Org);
+                else
+                {
+                    tmp = new List<CommandScript>();
+                    tmp.Add(each);
+                    CommandScriptList.TryAdd(each.CommandScriptID, tmp);
+                }
+
+
             }
+
         }
 
         public static CommandScript GetStart(string ScriptName)

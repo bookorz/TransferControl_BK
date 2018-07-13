@@ -24,8 +24,8 @@ namespace TransferControl.Engine
         IEngineReport _EngReport;
         int LapsedWfCount = 0;
         int LapsedLotCount = 0;
-        string EqpState = "";
-
+        public string EqpState = "";
+        
         public int SpinWaitTimeOut = 99999000;
 
         /// <summary>
@@ -38,32 +38,10 @@ namespace TransferControl.Engine
             _EngReport = ReportTarget;
 
             //初始化所有Controller
-            ConfigTool<DeviceConfig> DeviceCfg = new ConfigTool<DeviceConfig>();
-            foreach (DeviceConfig eachDevice in DeviceCfg.ReadFileByList("config/Controller/Controllers.json"))
-            {
-                if (!eachDevice.Enable)
-                {
-                    continue;
-                }
-                DeviceController ctrl = new DeviceController(eachDevice, this);
-                //ctrl.Connect();
-                ControllerManagement.Add(eachDevice.DeviceName, ctrl);
-            }
+            ControllerManagement.LoadConfig(this);
 
             //初始化所有Node
-            ConfigTool<Node> NodeCfg = new ConfigTool<Node>();
-
-            foreach (Node eachNode in NodeCfg.ReadFileByList("config/Node/Nodes.json"))
-            {
-                if (!eachNode.Enable)
-                {
-                    continue;
-                }
-
-                eachNode.InitialObject();
-                NodeManagement.Add(eachNode.Name, eachNode);
-
-            }
+            NodeManagement.LoadConfig();
             //初始化傳送腳本
             PathManagement.LoadConfig();
             //初始化命令腳本
@@ -110,6 +88,16 @@ namespace TransferControl.Engine
                     }
                     txn.FormName = "PauseProcedure";
                 }
+                _EngReport.On_Eqp_State_Changed(EqpState, "Run");
+                EqpState = "Run";
+                foreach (Node port in NodeManagement.GetLoadPortList())
+                {
+                    if (port.Available && port.Fetchable)
+                    {
+                        ProcessRecord.AddDetail(port, "Continue", "EXECUTING");
+                        
+                    }
+                }
             }
             else
             {
@@ -141,6 +129,16 @@ namespace TransferControl.Engine
                     }
                     txn.FormName = "PauseProcedure";
                 }
+                _EngReport.On_Eqp_State_Changed(EqpState, "Pause");
+                foreach(Node port in NodeManagement.GetLoadPortList())
+                {
+                    if(port.Available && port.Fetchable)
+                    {
+                        ProcessRecord.AddDetail(port,"Pause","PAUSED");
+                        
+                    }
+                }
+                EqpState = "Pause";
             }
             else
             {
@@ -165,13 +163,14 @@ namespace TransferControl.Engine
                     port.Available = false;
                     port.Fetchable = false;
                     port.ReserveList.Clear();
+                    ProcessRecord.AddDetail(port, "Abort", "ABORTED");
                     foreach (Job j in port.JobList.Values.ToList())
                     {
-                        j.Destination = "";
-                        j.DestinationSlot = "";
-                        j.DisplayDestination = "";
+                        j.UnAssignPort();
+                        
                     }
                     _EngReport.On_Mode_Changed("Stop");
+   
                 }
             }
 
@@ -287,8 +286,9 @@ namespace TransferControl.Engine
                             logger.Debug(robot.Name + ":指定 " + tmp[0].Name + " 開始取片");
                             LapsedLotCount++;
                             LapsedWfCount += (from jb in tmp[0].JobList.Values
-                                              where jb.MapFlag && !jb.ProcessFlag
+                                              where jb.MapFlag && !jb.ProcessFlag && jb.NeedProcess
                                               select jb).Count();
+                            ProcessRecord.AddDetail(tmp[0],"Start","EXECUTING");
                         }
                         else
                         {
@@ -308,6 +308,7 @@ namespace TransferControl.Engine
                 TimeSpan diff = DateTime.Now - StartTime;
                 logger.Info("Process Time: " + diff.TotalSeconds);
                 _EngReport.On_Eqp_State_Changed(EqpState, "Idle");
+                EqpState = "Idle";
                 _EngReport.On_Task_Finished(FormName.ToString(), diff.TotalSeconds.ToString(), LapsedWfCount, LapsedLotCount);
                 logger.Debug("搬運週期完成，下個周期開始");
                 
@@ -418,7 +419,7 @@ namespace TransferControl.Engine
                         }
                         List<Job> JobsSortBySlot = PortNode.JobList.Values.ToList();
                         var findJob = from Job in JobsSortBySlot
-                                      where Job.ProcessFlag == false && Job.MapFlag
+                                      where Job.ProcessFlag == false && Job.NeedProcess && Job.MapFlag
                                       select Job;
 
                         if (findJob.Count() == 0)
@@ -438,6 +439,8 @@ namespace TransferControl.Engine
                             {
                                 PortNode.Used = false;
                                 _EngReport.On_Port_Finished(PortNode.Name, FormName);
+                                ProcessRecord.AddDetail(PortNode,"Finish","COMPLETE");
+                                PortNode.PrID = "";
                             }
                         }
                         else
@@ -446,7 +449,7 @@ namespace TransferControl.Engine
                             JobsSortBySlot.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
                             foreach (Job eachJob in JobsSortBySlot)
                             {
-                                if (!eachJob.ProcessFlag)
+                                if (!eachJob.ProcessFlag && eachJob.NeedProcess)
                                 {
                                     if (FirstSlot == -1)
                                     {
@@ -547,7 +550,7 @@ namespace TransferControl.Engine
                     JobsSortBySlot = PortNode.JobList.Values.ToList();
                 }
                 var findJob = from Job in JobsSortBySlot
-                              where Job.ProcessFlag == false && Job.MapFlag
+                              where Job.ProcessFlag == false && Job.NeedProcess && Job.MapFlag
                               select Job;
                 JobsSortBySlot = findJob.ToList();
                 JobsSortBySlot.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
@@ -640,7 +643,7 @@ namespace TransferControl.Engine
             try
             {
                 var find = from job in RobotNode.JobList.Values.ToList()
-                           where !job.ProcessFlag
+                           where !job.ProcessFlag && job.NeedProcess
                            select job;
                 string lastProcessNode = "";
                 if (find.Count() != 0)
@@ -1364,6 +1367,7 @@ namespace TransferControl.Engine
                                         Job wafer = new Job();
                                         wafer.Slot = (i + 1).ToString();
                                         wafer.FromPort = Node.Name;
+                                        wafer.FromPortSlot = wafer.Slot;
                                         wafer.Position = Node.Name;
                                         wafer.AlignerFlag = false;
                                         string Slot = (i + 1).ToString("00");
@@ -1469,37 +1473,37 @@ namespace TransferControl.Engine
                                     {
                                         switch (eachPath.Expression)
                                         {
-                                            case "[Job.AlignerFlag] == true":
+                                            case "Job.AlignerFlag == true":
                                                 if (!TargetJob.AlignerFlag)
                                                 {
                                                     continue;
                                                 }
                                                 break;
-                                            case "[Job.AlignerFlag] == false":
+                                            case "Job.AlignerFlag == false":
                                                 if (TargetJob.AlignerFlag)
                                                 {
                                                     continue;
                                                 }
                                                 break;
-                                            case "[Job.OCRFlag] == true":
+                                            case "Job.OCRFlag == true":
                                                 if (!TargetJob.OCRFlag)
                                                 {
                                                     continue;
                                                 }
                                                 break;
-                                            case "[Job.OCRFlag] == false":
+                                            case "Job.OCRFlag == false":
                                                 if (TargetJob.OCRFlag)
                                                 {
                                                     continue;
                                                 }
                                                 break;
-                                            case "[Job.AlignerFinished] == true":
+                                            case "Job.AlignerFinished == true":
                                                 if (!TargetJob.AlignerFinished)
                                                 {
                                                     continue;
                                                 }
                                                 break;
-                                            case "[Job.AlignerFinished] == false":
+                                            case "Job.AlignerFinished == false":
                                                 if (TargetJob.AlignerFinished)
                                                 {
                                                     continue;
@@ -1653,37 +1657,37 @@ namespace TransferControl.Engine
                                     {
                                         switch (eachPath.Expression)
                                         {
-                                            case "[Job.AlignerFlag] == true":
+                                            case "Job.AlignerFlag == true":
                                                 if (!TargetJob.AlignerFlag)
                                                 {
                                                     continue;
                                                 }
                                                 break;
-                                            case "[Job.AlignerFlag] == false":
+                                            case "Job.AlignerFlag == false":
                                                 if (TargetJob.AlignerFlag)
                                                 {
                                                     continue;
                                                 }
                                                 break;
-                                            case "[Job.OCRFlag] == true":
+                                            case "Job.OCRFlag == true":
                                                 if (!TargetJob.OCRFlag)
                                                 {
                                                     continue;
                                                 }
                                                 break;
-                                            case "[Job.OCRFlag] == false":
+                                            case "Job.OCRFlag == false":
                                                 if (TargetJob.OCRFlag)
                                                 {
                                                     continue;
                                                 }
                                                 break;
-                                            case "[Job.AlignerFinished] == true":
+                                            case "Job.AlignerFinished == true":
                                                 if (!TargetJob.AlignerFinished)
                                                 {
                                                     continue;
                                                 }
                                                 break;
-                                            case "[Job.AlignerFinished] == false":
+                                            case "Job.AlignerFinished == false":
                                                 if (TargetJob.AlignerFinished)
                                                 {
                                                     continue;
@@ -1807,7 +1811,7 @@ namespace TransferControl.Engine
                             if (Node.Phase.Equals("2"))
                             {
                                 var find = from job in Node.JobList.Values.ToList()
-                                           where !job.ProcessFlag
+                                           where !job.ProcessFlag && job.NeedProcess
                                            select job;
                                 if (find.Count() == 0)
                                 {
