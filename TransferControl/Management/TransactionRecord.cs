@@ -53,7 +53,7 @@ namespace TransferControl.Management
                 Txn.uuid = GetUUID();
                 if (!Txn.uuid.Equals(""))
                 {
-                    string SQL = @"insert into cmd_txn_log 
+                    string SQL = @"insert into log_cmd_txn  
                                     (txn_id,node_name,node_type,txn_status,txn_start_time,txn_method,txn_position,txn_slot,txn_arm,txn_value,script_name,form_name,encodestr,return_value,cmd_type)
                                     values(@txn_id,@node_name,@node_type,@txn_status,now(6),@txn_method,@txn_position,@txn_slot,@txn_arm,@txn_value,@script_name,@form_name,@encodestr,'',@cmd_type)";
 
@@ -103,7 +103,7 @@ namespace TransferControl.Management
             {
                 if (!Txn.uuid.Equals(""))
                 {
-                    string SQL = @"update cmd_txn_log set txn_end_time = NOW(6),txn_status = @txn_status,return_value = @return_value where txn_id = @txn_id";
+                    string SQL = @"update log_cmd_txn  set txn_end_time = NOW(6),txn_status = @txn_status,return_value = @return_value where txn_id = @txn_id";
 
                     keyValues.Add("@txn_id", Txn.uuid);
                     keyValues.Add("@txn_status", Msg.Type);
@@ -142,7 +142,7 @@ namespace TransferControl.Management
             
             try
             {
-                string SQL = @"insert into cmd_txn_log_detail (txn_id,return_type,receive_time,return_value) 
+                string SQL = @"insert into log_cmd_txn_detail (txn_id,return_type,receive_time,return_value) 
                                 values(@txn_id,@return_type,NOW(6),@return_value)";
 
                 keyValues.Add("@txn_id", txn_id);               

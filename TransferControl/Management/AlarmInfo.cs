@@ -17,7 +17,7 @@ namespace TransferControl.Management
         public string Type { get; set; }
         public bool IsStop { get; set; }
         public bool NeedReset { get; set; }
-        public string TimeStamp { get; set; }
+        public DateTime TimeStamp { get; set; }
         public AlarmInfo()
         {
             NodeName = "";
@@ -29,7 +29,7 @@ namespace TransferControl.Management
             Type = "";
             IsStop = false;
             NeedReset = false;
-            TimeStamp = "";
+          
         }
     }
 }
