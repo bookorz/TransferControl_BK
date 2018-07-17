@@ -198,7 +198,7 @@ namespace TransferControl.Management
             {
                 State = "Ready To Load";
             }
-            LastState = "";
+            LastState = "Idle";
 
             PutOut = false;
             PutAvailable = true;
@@ -208,7 +208,7 @@ namespace TransferControl.Management
             Reserve = false;
             AllDone = false;
             Available = true;
-            Enable = true;
+            //Enable = true;
 
 
             Used = false;

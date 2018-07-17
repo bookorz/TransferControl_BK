@@ -96,12 +96,12 @@ namespace TransferControl.Comm
                 ConnReport.On_Connection_Connecting("Connecting to ");
                 port.Open();
                 ConnReport.On_Connection_Connected("Connected! ");
-                switch (cfg.DeviceType)
+                switch (cfg.DeviceType.ToUpper())
                 {
                     case "TDK":
                         port.DataReceived += new SerialDataReceivedEventHandler(TDK_DataReceived);
                         break;
-                    case "Sanwa":
+                    case "SANWA":
                         port.DataReceived += new SerialDataReceivedEventHandler(Sanwa_DataReceived);
                         break;
                 }

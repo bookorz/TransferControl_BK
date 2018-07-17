@@ -1964,6 +1964,7 @@ namespace TransferControl.Engine
                                     TargetNode5.JobList.TryAdd(Txn.TargetJobs[i].Slot, tmp);
                                 }
                                 Txn.TargetJobs[i].LastNode = Txn.TargetJobs[i].Position;
+                                Txn.TargetJobs[i].LastSlot = Txn.TargetJobs[i].Slot;
                                 Txn.TargetJobs[i].Slot = (i + 1).ToString();
                                 Txn.TargetJobs[i].Position = Node.Name;
                                 Node.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
@@ -1978,6 +1979,7 @@ namespace TransferControl.Engine
                                 Job tmp;
                                 Node.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
                                 Txn.TargetJobs[i].LastNode = Txn.TargetJobs[i].Position;
+                                Txn.TargetJobs[i].LastSlot = Txn.TargetJobs[i].Slot;
                                 switch (i)
                                 {
                                     case 0:
@@ -1995,6 +1997,11 @@ namespace TransferControl.Engine
                                 TargetNode6.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
                                 TargetNode6.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
                                 _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
+                                if (Txn.TargetJobs[i].Position.Equals(Txn.TargetJobs[i].Destination))
+                                {
+                                    Node from = NodeManagement.Get(Txn.TargetJobs[i].FromPort);
+                                    ProcessRecord.updateSubstrateStatus(from.PrID, Txn.TargetJobs[i], "COMPLETE");
+                                }
                             }
                             //if (IsTaskFinish())
                             //{
@@ -2020,6 +2027,7 @@ namespace TransferControl.Engine
                                     TargetNode4.JobList.TryAdd(Txn.TargetJobs[i].Slot, tmp);
                                 }
                                 Txn.TargetJobs[i].LastNode = Txn.TargetJobs[i].Position;
+                                Txn.TargetJobs[i].LastSlot = Txn.TargetJobs[i].Slot;
                                 Txn.TargetJobs[i].Position = Node.Name;
                                 switch (i)
                                 {
@@ -2054,6 +2062,7 @@ namespace TransferControl.Engine
                                 Job tmp;
                                 Node.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
                                 Txn.TargetJobs[i].LastNode = Txn.TargetJobs[i].Position;
+                                Txn.TargetJobs[i].LastSlot = Txn.TargetJobs[i].Slot;
                                 Txn.TargetJobs[i].Position = Txn.Position;
                                 //Txn.TargetJobs[i].ProcessFlag = true;
                                 switch (i)
@@ -2072,6 +2081,11 @@ namespace TransferControl.Engine
                                 TargetNode3.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
                                 _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
                                 // logger.Debug(JsonConvert.SerializeObject(Txn.TargetJobs[i]));
+                                if (Txn.TargetJobs[i].Position.Equals(Txn.TargetJobs[i].Destination))
+                                {
+                                    Node from = NodeManagement.Get(Txn.TargetJobs[i].FromPort);
+                                    ProcessRecord.updateSubstrateStatus(from.PrID, Txn.TargetJobs[i], "COMPLETE");
+                                }
                             }
                             //if (Txn.Method.Equals(Transaction.Command.RobotType.Put))
                             //{

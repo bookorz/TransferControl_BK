@@ -54,21 +54,20 @@ namespace TransferControl.Management
                 {
                     Port.PrID = GetUUID();
                 }
-                string SQL = @"replace into log_process_job t(pr_id,foup_id,slot_list,process_cnt,create_time)
-                                    values(@pr_id,@foup_id,@slot_list,@process_cnt,@create_time)";
+                string SQL = @"insert into log_process_job (pr_id,foup_id,slot_list,process_cnt,create_time,time_stamp)
+                                    values(@pr_id,@foup_id,@slot_list,@process_cnt,@create_time,now())";
 
                 keyValues.Add("@pr_id", Port.PrID);
                 keyValues.Add("@foup_id", Port.FoupID);
                 var findJob = from j in Port.JobList.Values.ToList()
-                              where !j.NeedProcess
+                              where j.NeedProcess
                               select j;
+                List<Job> tmp = findJob.ToList();
+                tmp.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
                 string SlotList = "";
-                foreach (Job job in findJob)
+                foreach (Job job in tmp)
                 {
-                    if (!job.NeedProcess)
-                    {
-                        continue;
-                    }
+                   
                     if (!SlotList.Equals(""))
                     {
                         SlotList += ",";
@@ -158,17 +157,17 @@ namespace TransferControl.Management
                 else
                 {
                     
-                    if (!event_type.Equals("Start") && !event_type.Equals("Finish") && !event_type.Equals("Create"))
-                    {
-                        foreach (Job j in Port.JobList.Values.ToList())
-                        {
+                    //if (!event_type.Equals("Start") && !event_type.Equals("Finish") && !event_type.Equals("Create"))
+                    //{
+                    //    foreach (Job j in Port.JobList.Values.ToList())
+                    //    {
 
-                            if (j.NeedProcess)
-                            {
-                                ProcessRecord.updateSubstrateStatus(Port.PrID, j, job_status);
-                            }
-                        }
-                    }
+                    //        if (j.NeedProcess)
+                    //        {
+                    //            ProcessRecord.updateSubstrateStatus(Port.PrID, j, job_status);
+                    //        }
+                    //    }
+                    //}
                 }
 
             }
@@ -180,7 +179,7 @@ namespace TransferControl.Management
 
         public static void AddSubstrate(Node Port)
         {
-            Dictionary<string, object> keyValues = new Dictionary<string, object>();
+            
 
             try
             {
@@ -193,10 +192,10 @@ namespace TransferControl.Management
                     }
                     Node FromPort = NodeManagement.Get(Job.FromPort);
                     Node ToPort = NodeManagement.Get(Job.Destination);
-                    string SQL = @"insert into log_process_job_substrate t
-(pr_id,host_id,from_position,farom_position_slot,to_position,to_position_slot,from_foup_id,to_foup_id,job_status,ocr_result,ocr_path,create_time)
+                    string SQL = @"insert into log_process_job_substrate
+(pr_id,host_id,from_position,from_position_slot,to_position,to_position_slot,from_foup_id,to_foup_id,job_status,ocr_result,ocr_path,create_time)
 values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_position_slot,@from_foup_id,@to_foup_id,@job_status,@ocr_result,@ocr_path,@create_time)";
-
+                    Dictionary<string, object> keyValues = new Dictionary<string, object>();
                     keyValues.Add("@pr_id", Port.PrID);
                     keyValues.Add("@host_id", Job.Host_Job_Id);
                     keyValues.Add("@from_position", Job.FromPort);

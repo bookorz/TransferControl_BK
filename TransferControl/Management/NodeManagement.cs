@@ -23,7 +23,7 @@ namespace TransferControl.Management
 
         public static void LoadConfig()
         {
-            string Sql = @"SELECT t.node_id AS name,t.controller_id AS controller,t.conn_address AS adrno, t.node_type AS TYPE,t.vendor AS brand,t.bypass,1 AS Enable,t.default_aligner AS defaultaligner,t.alternative_aligner AS alternativealigner,t.route_table AS routetable
+            string Sql = @"SELECT t.node_id AS name,t.controller_id AS controller,t.conn_address AS adrno, t.node_type AS TYPE,t.vendor AS brand,t.bypass,t.enable_flg AS Enable,t.default_aligner AS defaultaligner,t.alternative_aligner AS alternativealigner,t.route_table AS routetable
                                 FROM config_node t";
             DataTable dt = dBUtil.GetDataTable(Sql, null);
             string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);
@@ -32,8 +32,12 @@ namespace TransferControl.Management
            
             foreach (Node each in nodeList)
             {
-                NodeList.TryAdd(each.Name, each);
-                NodeListByCtrl.TryAdd(each.Controller + each.AdrNo, each);
+                if (each.Enable)
+                {
+                    each.InitialObject();
+                    NodeList.TryAdd(each.Name, each);
+                    NodeListByCtrl.TryAdd(each.Controller + each.AdrNo, each);
+                }
             }
         }
 
@@ -58,7 +62,7 @@ namespace TransferControl.Management
         {
             bool result = false;
             var findNotInit = from node in NodeList.Values.ToList()
-                              where !node.InitialComplete && !node.Type.Equals("OCR") && !node.ByPass
+                              where !node.InitialComplete && !node.Type.Equals("OCR") && !node.Type.Equals("SYSTEM") && !node.ByPass
                               select node;
             if (findNotInit.Count() == 0)
             {

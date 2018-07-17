@@ -50,12 +50,13 @@ namespace TransferControl.Management
         
             try
             {
+                DateTime SendTime = DateTime.Now;
                 Txn.uuid = GetUUID();
                 if (!Txn.uuid.Equals(""))
                 {
                     string SQL = @"insert into log_cmd_txn  
-                                    (txn_id,node_name,node_type,txn_status,txn_start_time,txn_method,txn_position,txn_slot,txn_arm,txn_value,script_name,form_name,encodestr,return_value,cmd_type)
-                                    values(@txn_id,@node_name,@node_type,@txn_status,now(6),@txn_method,@txn_position,@txn_slot,@txn_arm,@txn_value,@script_name,@form_name,@encodestr,'',@cmd_type)";
+                                    (txn_id,node_name,node_type,txn_status,txn_start_time,txn_method,txn_position,txn_slot,txn_arm,txn_value,script_name,form_name,return_value,cmd_type)
+                                    values(@txn_id,@node_name,@node_type,@txn_status,now(6),@txn_method,@txn_position,@txn_slot,@txn_arm,@txn_value,@script_name,@form_name,'',@cmd_type)";
 
                     keyValues.Add("@txn_id", Txn.uuid);
                     keyValues.Add("@node_name", Txn.NodeName);
@@ -68,13 +69,14 @@ namespace TransferControl.Management
                     keyValues.Add("@txn_value", Txn.Value);
                     keyValues.Add("@script_name", Txn.ScriptName);
                     keyValues.Add("@form_name", Txn.FormName);
-                    keyValues.Add("@encodestr", Txn.CommandEncodeStr);
+                    //keyValues.Add("@encodestr", Txn.CommandEncodeStr);
                     keyValues.Add("@cmd_type", Txn.CommandType);
+                    //keyValues.Add("@txn_start_time", SendTime);
 
                     int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
                     if (ReturnVal != 0)
                     {
-                        if (AddDetail(Txn.uuid, Txn.NodeName, Txn.NodeType, txn_status, ""))
+                        if (AddDetail(Txn.uuid, Txn.NodeName, Txn.NodeType, txn_status, "", Txn.CommandEncodeStr, SendTime))
                         {
                             result = true;
                         }
@@ -98,23 +100,23 @@ namespace TransferControl.Management
 
             DBUtil dBUtil = new DBUtil();
             Dictionary<string, object> keyValues = new Dictionary<string, object>();
-      
+            DateTime ReceiveTime = DateTime.Now;
             try
             {
                 if (!Txn.uuid.Equals(""))
                 {
-                    string SQL = @"update log_cmd_txn  set txn_end_time = NOW(6),txn_status = @txn_status,return_value = @return_value where txn_id = @txn_id";
+                    string SQL = @"update log_cmd_txn  set txn_end_time = @txn_end_time,txn_status = @txn_status,return_value = @return_value where txn_id = @txn_id";
 
                     keyValues.Add("@txn_id", Txn.uuid);
                     keyValues.Add("@txn_status", Msg.Type);
                     keyValues.Add("@return_value", Msg.Value);
-                   
-                   
+                    keyValues.Add("@txn_end_time", ReceiveTime);
+
 
                     int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
                     if (ReturnVal != 0)
                     {
-                        if (AddDetail(Txn.uuid, Txn.NodeName, Txn.NodeType, Msg.Type, Msg.Value))
+                        if (AddDetail(Txn.uuid, Txn.NodeName, Txn.NodeType, Msg.Type, Msg.Value, Msg.OrgMsg, ReceiveTime))
                         {
                             result = true;
                         }
@@ -133,7 +135,7 @@ namespace TransferControl.Management
             return result;
         }
 
-        public static bool AddDetail(string txn_id, string node_name, string node_type, string return_type, string return_value)
+        public static bool AddDetail(string txn_id, string node_name, string node_type, string return_type, string return_value,string raw_data,DateTime receive_time)
         {
             bool result = false;
 
@@ -142,13 +144,14 @@ namespace TransferControl.Management
             
             try
             {
-                string SQL = @"insert into log_cmd_txn_detail (txn_id,return_type,receive_time,return_value) 
-                                values(@txn_id,@return_type,NOW(6),@return_value)";
+                string SQL = @"insert into log_cmd_txn_detail (txn_id,return_type,receive_time,return_value,raw_data) 
+                                values(@txn_id,@return_type,now(6),@return_value,@raw_data)";
 
                 keyValues.Add("@txn_id", txn_id);               
                 keyValues.Add("@return_type", return_type);
                 keyValues.Add("@return_value", return_value);
-              
+                keyValues.Add("@raw_data", raw_data);
+                //keyValues.Add("@receive_time", receive_time);
 
                 int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
                 if (ReturnVal != 0)

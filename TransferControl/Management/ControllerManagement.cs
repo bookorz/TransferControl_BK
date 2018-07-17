@@ -41,8 +41,11 @@ namespace TransferControl.Management
 
             foreach (DeviceConfig each in ctrlList)
             {
-                DeviceController tmp = new DeviceController(each, Report);
-                Controllers.TryAdd(each.DeviceName, tmp);
+                if (each.Enable)
+                {
+                    DeviceController tmp = new DeviceController(each, Report);
+                    Controllers.TryAdd(each.DeviceName, tmp);
+                }
             }
         }
 

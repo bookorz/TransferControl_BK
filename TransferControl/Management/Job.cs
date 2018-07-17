@@ -25,6 +25,7 @@ namespace TransferControl.Management
         public string DisplayDestination { get; private set; }
         public string DestinationSlot { get; private set; }
         public string LastNode { get; set; }
+        public string LastSlot { get; set; }
         public string CurrentState { get; set; }
         public string WaitToDo { get; set; }
         public string ProcessNode { get; set; }

@@ -118,12 +118,12 @@ namespace TransferControl.Management
 
             try
             {
-                string SQL = @"insert into log_alarm_his (node_name,system_alarm_code,alarm_tpye,alarm_code,alarm_desc,alarm_eng_desc,alarm_type,is_stop,need_reset,time_stamp)
-                                values(@node_name,@system_alarm_code,@alarm_tpye,@alarm_code,@alarm_desc,@alarm_eng_desc,@alarm_type,@is_stop,@need_reset,@time_stamp)";
+                string SQL = @"insert into log_alarm_his (node_name,system_alarm_code,alarm_code,alarm_desc,alarm_eng_desc,alarm_type,is_stop,need_reset,time_stamp)
+                                values(@node_name,@system_alarm_code,@alarm_code,@alarm_desc,@alarm_eng_desc,@alarm_type,@is_stop,@need_reset,@time_stamp)";
 
                 keyValues.Add("@node_name", alm.NodeName);
                 keyValues.Add("@system_alarm_code", alm.SystemAlarmCode);
-                keyValues.Add("@alarm_tpye", alm.AlarmType);
+                //keyValues.Add("@alarm_tpye", alm.AlarmType);
                 keyValues.Add("@alarm_code", alm.AlarmCode);
                 keyValues.Add("@alarm_desc", alm.Desc);
                 keyValues.Add("@alarm_eng_desc", alm.EngDesc);
