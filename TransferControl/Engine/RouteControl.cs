@@ -454,7 +454,7 @@ namespace TransferControl.Engine
                                     if (FirstSlot == -1)
                                     {
                                         FirstSlot = Convert.ToInt16(eachJob.Slot);
-                                        eachJob.ProcessFlag = true;
+                                       // eachJob.ProcessFlag = true;
                                         TargetJobs.Add(eachJob);
                                         RobotNode.CurrentLoadPort = PortNode.Name;
                                         //找到第一片
@@ -470,7 +470,7 @@ namespace TransferControl.Engine
                                         if (diff == 1)
                                         {
                                             ConsecutiveSlot = true;
-                                            eachJob.ProcessFlag = true;
+                                           // eachJob.ProcessFlag = true;
                                             TargetJobs.Add(eachJob);
 
                                         }
@@ -561,7 +561,7 @@ namespace TransferControl.Engine
                         if (FirstSlot == -1)
                         {
                             FirstSlot = Convert.ToInt16(eachJob.Slot);
-                            eachJob.ProcessFlag = true;
+                            //eachJob.ProcessFlag = true;
                             TargetJobs.Add(eachJob);
                             break;//找到
                         }
@@ -620,6 +620,10 @@ namespace TransferControl.Engine
 
                 if (find.Count() == 0)
                 {
+                    foreach(Job j in find)
+                    {
+                        j.ProcessFlag = true;
+                    }
                     RobotNode.Phase = "3";//目前為Aligner Bypass,進入放片階段
                     RobotPutMode(RobotNode, ScriptName, FormName);
                 }
@@ -643,7 +647,7 @@ namespace TransferControl.Engine
             try
             {
                 var find = from job in RobotNode.JobList.Values.ToList()
-                           where !job.ProcessFlag && job.NeedProcess
+                           where  job.NeedProcess
                            select job;
                 string lastProcessNode = "";
                 if (find.Count() != 0)
@@ -1071,7 +1075,7 @@ namespace TransferControl.Engine
                         {
                             logger.Debug(Node.Name + " 等待主控權 " + Action.EqpType + ":" + Action.Method);
                             logger.Debug(Node.Name + " 等待主控權 " + Node.InterLock + "," + Node.UnLockByJob + "," + TargetJob.Job_Id);
-                            SpinWait.SpinUntil(() => (!Node.InterLock && (Node.UnLockByJob.Equals("") || Node.UnLockByJob.Equals(TargetJob.Job_Id))) || Force || _Mode.Equals("Stop"), SpinWaitTimeOut);
+                            SpinWait.SpinUntil(() => ( (Node.UnLockByJob.Equals("") || Node.UnLockByJob.Equals(TargetJob.Job_Id))) || Force || _Mode.Equals("Stop"), SpinWaitTimeOut);
                             if (_Mode.Equals("Stop"))
                             {
                                 logger.Debug("離開自動模式");
@@ -1093,7 +1097,7 @@ namespace TransferControl.Engine
 
                             lock (Node)
                             {
-                                if ((!Node.InterLock && (Node.UnLockByJob.Equals("") || Node.UnLockByJob.Equals(TargetJob.Job_Id))) || Force)
+                                if (( (Node.UnLockByJob.Equals("") || Node.UnLockByJob.Equals(TargetJob.Job_Id))) || Force)
                                 {
                                     Node.InterLock = true;
                                     logger.Debug(Node.Name + " 取得主控權，離開排隊:" + Action.EqpType + ":" + Action.Method);
@@ -1358,8 +1362,8 @@ namespace TransferControl.Engine
                                     break;
                                 case Transaction.Command.LoadPortType.GetMapping:
                                     //產生Mapping資料
-                                    //string Mapping = Msg.Value;
-                                    string Mapping = "1111000000000000000000000";
+                                    string Mapping = Msg.Value;
+                                    //string Mapping = "1111000000000000000000000";
                                     //WaferAssignUpdate.UpdateLoadPortMapping(Node.Name, Msg.Value);
                                     int currentIdx = 1;
                                     for (int i = 0; i < Mapping.Length; i++)
@@ -1645,6 +1649,16 @@ namespace TransferControl.Engine
                                     {
                                         Txn.TargetJobs[0].Host_Job_Id = Msg.Value.Replace("[", "").Replace("]", "").Split(',')[0];
                                         _EngReport.On_Job_Location_Changed(Txn.TargetJobs[0]);
+                                    }
+                                }
+                            }
+                            else if (Node.Type.ToUpper().Equals("ALIGNER"))
+                            {
+                                if (Txn.Method.Equals(Transaction.Command.AlignerType.Align))
+                                {
+                                    if (Txn.TargetJobs.Count != 0)
+                                    {
+                                        Txn.TargetJobs[0].ProcessFlag = true;
                                     }
                                 }
                             }
@@ -1962,6 +1976,7 @@ namespace TransferControl.Engine
                                     tmp.Host_Job_Id = "No wafer";
                                     tmp.Slot = Txn.TargetJobs[i].Slot;
                                     TargetNode5.JobList.TryAdd(Txn.TargetJobs[i].Slot, tmp);
+                                    ProcessRecord.UpdateSubstrateStart(TargetNode5.PrID, Txn.TargetJobs[i]);
                                 }
                                 Txn.TargetJobs[i].LastNode = Txn.TargetJobs[i].Position;
                                 Txn.TargetJobs[i].LastSlot = Txn.TargetJobs[i].Slot;
@@ -2001,6 +2016,7 @@ namespace TransferControl.Engine
                                 {
                                     Node from = NodeManagement.Get(Txn.TargetJobs[i].FromPort);
                                     ProcessRecord.updateSubstrateStatus(from.PrID, Txn.TargetJobs[i], "COMPLETE");
+                                    ProcessRecord.UpdateSubstrateEnd(from.PrID, Txn.TargetJobs[i]);
                                 }
                             }
                             //if (IsTaskFinish())
@@ -2025,6 +2041,7 @@ namespace TransferControl.Engine
                                     tmp.Host_Job_Id = "No wafer";
                                     tmp.Slot = Txn.TargetJobs[i].Slot;
                                     TargetNode4.JobList.TryAdd(Txn.TargetJobs[i].Slot, tmp);
+                                    ProcessRecord.UpdateSubstrateStart(TargetNode4.PrID, Txn.TargetJobs[i]);
                                 }
                                 Txn.TargetJobs[i].LastNode = Txn.TargetJobs[i].Position;
                                 Txn.TargetJobs[i].LastSlot = Txn.TargetJobs[i].Slot;
@@ -2083,8 +2100,10 @@ namespace TransferControl.Engine
                                 // logger.Debug(JsonConvert.SerializeObject(Txn.TargetJobs[i]));
                                 if (Txn.TargetJobs[i].Position.Equals(Txn.TargetJobs[i].Destination))
                                 {
+                                    
                                     Node from = NodeManagement.Get(Txn.TargetJobs[i].FromPort);
                                     ProcessRecord.updateSubstrateStatus(from.PrID, Txn.TargetJobs[i], "COMPLETE");
+                                    ProcessRecord.UpdateSubstrateEnd(from.PrID, Txn.TargetJobs[i]);
                                 }
                             }
                             //if (Txn.Method.Equals(Transaction.Command.RobotType.Put))

@@ -52,7 +52,7 @@ namespace TransferControl.Management
             Dictionary<string, object> keyValues = new Dictionary<string, object>();
             string Sql = @"SELECT * FROM config_command_script where CommandScriptID = @scriptname";
             keyValues.Add("@scriptname", ScriptName);
-            DataTable dt = dBUtil.GetDataTable(Sql, null);
+            DataTable dt = dBUtil.GetDataTable(Sql, keyValues);
             string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);
             foreach (string eachP in Param.Keys)
             {

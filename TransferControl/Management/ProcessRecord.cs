@@ -224,6 +224,66 @@ values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_posit
             }
         }
 
+        public static void UpdateSubstrateStart(string pr_id, Job Job)
+        {
+            Dictionary<string, object> keyValues = new Dictionary<string, object>();
+
+            try
+            {
+
+                string SQL = @"update log_process_job_substrate t
+                                set t.start_time = now()
+                                where t.pr_id = @pr_id                         
+                                and t.from_position_slot = @from_position_slot";
+
+                keyValues.Add("@pr_id", pr_id);
+               
+                keyValues.Add("@from_position_slot", Job.FromPortSlot);
+               
+
+                int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
+                if (ReturnVal == 0)
+                {
+                    logger.Error("UpdateSubstrateStart error.");
+                }
+
+            }
+            catch (Exception e)
+            {
+                logger.Error("UpdateSubstrateStart error:" + e.StackTrace);
+            }
+        }
+
+        public static void UpdateSubstrateEnd(string pr_id, Job Job)
+        {
+            Dictionary<string, object> keyValues = new Dictionary<string, object>();
+
+            try
+            {
+
+                string SQL = @"update log_process_job_substrate t
+                                set t.end_time = now()
+                                where t.pr_id = @pr_id                         
+                                and t.from_position_slot = @from_position_slot";
+
+                keyValues.Add("@pr_id", pr_id);
+
+                keyValues.Add("@from_position_slot", Job.FromPortSlot);
+
+
+                int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
+                if (ReturnVal == 0)
+                {
+                    logger.Error("UpdateSubstrateEnd error.");
+                }
+
+            }
+            catch (Exception e)
+            {
+                logger.Error("UpdateSubstrateEnd error:" + e.StackTrace);
+            }
+        }
+
         public static void updateSubstrateStatus(string pr_id, Job Job, string JobStatus)
         {
             Dictionary<string, object> keyValues = new Dictionary<string, object>();
@@ -234,11 +294,11 @@ values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_posit
                 string SQL = @"update log_process_job_substrate t
                                 set t.job_status = @job_status
                                 where t.pr_id = @pr_id
-                                and t.host_id = @host_id
+                               
                                 and t.from_position_slot = @from_position_slot";
 
                 keyValues.Add("@pr_id", pr_id);
-                keyValues.Add("@host_id", Job.Host_Job_Id);
+                
                 keyValues.Add("@from_position_slot", Job.FromPortSlot);
                 keyValues.Add("@job_status", JobStatus);
 
@@ -263,15 +323,13 @@ values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_posit
             {
 
                 string SQL = @"update log_process_job_substrate t
-                                set t.ocr_result = @ocr_result,t.ocr_path= @ ocr_path
-                                where t.pr_id = @pr_id
-                                and t.host_id = @host_id
+                                set t.ocr_result = @ocr_result,t.ocr_path= @ocr_path
+                                where t.pr_id = @pr_id                               
                                 and t.from_position_slot = @from_position_slot";
 
-                keyValues.Add("@pr_id", pr_id);
-                keyValues.Add("@host_id", Job.Host_Job_Id);
+                keyValues.Add("@pr_id", pr_id);              
                 keyValues.Add("@from_position_slot", Job.FromPortSlot);
-                keyValues.Add("@ocr_result", Job.Job_Id);
+                keyValues.Add("@ocr_result", Job.Host_Job_Id);
                 keyValues.Add("@ocr_path", Job.OCRImgPath);
 
                 int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
