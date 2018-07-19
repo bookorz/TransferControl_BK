@@ -20,12 +20,13 @@ namespace TransferControl.Management
             public string MappingCode { get; set; }
         }
 
-        static Dictionary<string, ParamMapping> MappingList = new Dictionary<string, ParamMapping>();
+        static Dictionary<string, ParamMapping> MappingList;
 
         public static void Initialize()
         {
             try
             {
+                MappingList = new Dictionary<string, ParamMapping>();
                 DBUtil dBUtil = new DBUtil();
 
                 DataTable dtCommand = new DataTable();

@@ -293,8 +293,7 @@ values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_posit
 
                 string SQL = @"update log_process_job_substrate t
                                 set t.job_status = @job_status
-                                where t.pr_id = @pr_id
-                               
+                                where t.pr_id = @pr_id                              
                                 and t.from_position_slot = @from_position_slot";
 
                 keyValues.Add("@pr_id", pr_id);
@@ -323,7 +322,7 @@ values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_posit
             {
 
                 string SQL = @"update log_process_job_substrate t
-                                set t.ocr_result = @ocr_result,t.ocr_path= @ocr_path
+                                set t.ocr_result = @ocr_result,t.ocr_path= @ocr_path ,t.ocr_score =@ocr_score
                                 where t.pr_id = @pr_id                               
                                 and t.from_position_slot = @from_position_slot";
 
@@ -331,6 +330,7 @@ values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_posit
                 keyValues.Add("@from_position_slot", Job.FromPortSlot);
                 keyValues.Add("@ocr_result", Job.Host_Job_Id);
                 keyValues.Add("@ocr_path", Job.OCRImgPath);
+                keyValues.Add("@ocr_score", Job.OCRScore);
 
                 int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
                 if (ReturnVal == 0)

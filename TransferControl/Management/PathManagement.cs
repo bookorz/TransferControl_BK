@@ -15,13 +15,13 @@ namespace TransferControl.Management
     public class PathManagement
     {
 
-        public static Dictionary<string, List<Path>> ScriptList = new Dictionary<string, List<Path>>();
+        public static Dictionary<string, List<Path>> ScriptList;
         static ILog logger = LogManager.GetLogger(typeof(PathManagement));
 
         private static DBUtil dBUtil = new DBUtil();
         public static void LoadConfig()
         {
-
+            ScriptList = new Dictionary<string, List<Path>>();
             string Sql = @"select * from config_transfer_script";
             DataTable dt = dBUtil.GetDataTable(Sql, null);
             string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);

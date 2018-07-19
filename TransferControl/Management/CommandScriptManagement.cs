@@ -16,11 +16,11 @@ namespace TransferControl.Management
     public class CommandScriptManagement
     {
         ILog logger = LogManager.GetLogger(typeof(CommandScriptManagement));
-        static ConcurrentDictionary<string, List<CommandScript>> CommandScriptList = new ConcurrentDictionary<string, List<CommandScript>>();
+        static ConcurrentDictionary<string, List<CommandScript>> CommandScriptList;
         private static DBUtil dBUtil = new DBUtil();
         public static void LoadConfig()
         {
-
+            CommandScriptList = new ConcurrentDictionary<string, List<CommandScript>>();
 
             string Sql = @"SELECT * FROM config_command_script";
             DataTable dt = dBUtil.GetDataTable(Sql, null);

@@ -17,10 +17,11 @@ namespace TransferControl.Management
         static ILog logger = LogManager.GetLogger(typeof(ControllerManagement));
         
         private static DBUtil dBUtil = new DBUtil();
-        private static ConcurrentDictionary<string, DeviceController> Controllers = new ConcurrentDictionary<string, DeviceController>();
+        private static ConcurrentDictionary<string, DeviceController> Controllers;
 
         public static void LoadConfig(ICommandReport Report)
         {
+            Controllers = new ConcurrentDictionary<string, DeviceController>();
             string Sql = @"select t.node_function_name as DeviceName,t.node_function_type as DeviceType,
                             case when t.conn_type = 'Socket' then  t.conn_address else '' end as IPAdress ,
                             case when t.conn_type = 'Socket' then  CONVERT(t.conn_prot,SIGNED) else 0 end as Port ,

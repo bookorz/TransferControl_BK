@@ -1647,7 +1647,16 @@ namespace TransferControl.Engine
                                 {
                                     if (Txn.TargetJobs.Count != 0)
                                     {
-                                        Txn.TargetJobs[0].Host_Job_Id = Msg.Value.Replace("[", "").Replace("]", "").Split(',')[0];
+                                        string[] OCRResult = Msg.Value.Replace("[", "").Replace("]", "").Split(',');
+                                        Txn.TargetJobs[0].Host_Job_Id = OCRResult[0];
+                                        if (OCRResult.Length >= 2)
+                                        {
+                                            Txn.TargetJobs[0].OCRScore = OCRResult[2];
+                                        }
+                                        else
+                                        {
+                                            Txn.TargetJobs[0].OCRScore = "0";
+                                        }
                                         _EngReport.On_Job_Location_Changed(Txn.TargetJobs[0]);
                                     }
                                 }

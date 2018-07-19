@@ -18,6 +18,7 @@ namespace TransferControl.Management
         public bool AlignerFinished { get; set; }
         public bool OCRFinished { get; set; }
         public string OCRImgPath { get; set; }
+        public string OCRScore { get; set; }
         public string Position { get; set; }
         public string FromPort { get; set; }
         public string FromPortSlot { get; set; }

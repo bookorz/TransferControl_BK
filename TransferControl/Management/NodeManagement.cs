@@ -15,14 +15,16 @@ namespace TransferControl.Management
 {
     public static class NodeManagement
     {
-        private static ConcurrentDictionary<string, Node> NodeList = new ConcurrentDictionary<string, Node>();
-        private static ConcurrentDictionary<string, Node> NodeListByCtrl = new ConcurrentDictionary<string, Node>();
+        private static ConcurrentDictionary<string, Node> NodeList;
+        private static ConcurrentDictionary<string, Node> NodeListByCtrl;
         static ILog logger = LogManager.GetLogger(typeof(NodeManagement));
 
         private static DBUtil dBUtil = new DBUtil();
 
         public static void LoadConfig()
         {
+            NodeList = new ConcurrentDictionary<string, Node>();
+            NodeListByCtrl = new ConcurrentDictionary<string, Node>();
             string Sql = @"SELECT t.node_id AS name,t.controller_id AS controller,t.conn_address AS adrno, t.node_type AS TYPE,t.vendor AS brand,t.bypass,t.enable_flg AS Enable,t.default_aligner AS defaultaligner,t.alternative_aligner AS alternativealigner,t.route_table AS routetable
                                 FROM config_node t";
             DataTable dt = dBUtil.GetDataTable(Sql, null);
