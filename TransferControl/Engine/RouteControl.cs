@@ -74,13 +74,13 @@ namespace TransferControl.Engine
                 foreach (Node node in NodeManagement.GetList())
                 {
                     Transaction txn = new Transaction();
-                    if (node.Type.Equals("Robot"))
+                    if (node.Type.Equals("ROBOT"))
                     {
                         txn.Method = Transaction.Command.RobotType.Continue;
                         node.SendCommand(txn);
                         node.State = "Run";
                     }
-                    else if (node.Type.Equals("Aligner"))
+                    else if (node.Type.Equals("ALIGNER"))
                     {
                         txn.Method = Transaction.Command.AlignerType.Continue;
                         node.SendCommand(txn);
@@ -115,13 +115,13 @@ namespace TransferControl.Engine
                 foreach (Node node in NodeManagement.GetList())
                 {
                     Transaction txn = new Transaction();
-                    if (node.Type.Equals("Robot"))
+                    if (node.Type.Equals("ROBOT"))
                     {
                         txn.Method = Transaction.Command.RobotType.Pause;
                         node.SendCommand(txn);
                         node.State = "Pause";
                     }
-                    else if (node.Type.Equals("Aligner"))
+                    else if (node.Type.Equals("ALIGNER"))
                     {
                         txn.Method = Transaction.Command.AlignerType.Pause;
                         node.SendCommand(txn);
@@ -246,7 +246,7 @@ namespace TransferControl.Engine
                     List<Node> PortList = new List<Node>();
                     foreach (Node.Route eachNode in robot.RouteTable)
                     {
-                        if (eachNode.NodeType.Equals("LoadPort"))
+                        if (eachNode.NodeType.Equals("LOADPORT"))
                         {
                             PortList.Add(NodeManagement.Get(eachNode.NodeName));
 
@@ -386,7 +386,7 @@ namespace TransferControl.Engine
                 List<Node> PortList = new List<Node>();
                 foreach (Node.Route eachNode in RobotNode.RouteTable)
                 {
-                    if (eachNode.NodeType.Equals("LoadPort"))
+                    if (eachNode.NodeType.Equals("LOADPORT"))
                     {
                         PortList.Add(NodeManagement.Get(eachNode.NodeName));
 
@@ -410,7 +410,7 @@ namespace TransferControl.Engine
                     int FirstSlot = -1;
                     bool ConsecutiveSlot = false;
 
-                    if (PortNode.Type.Equals("LoadPort"))
+                    if (PortNode.Type.Equals("LOADPORT"))
                     {//搜尋Port有沒有要處理的Wafer
 
                         if (!PortNode.Fetchable || !PortNode.Available)
@@ -734,11 +734,11 @@ namespace TransferControl.Engine
                     break;
                 case "Robot":
                     result = NodeManagement.Get(Job.Position);
-                    if (!result.Type.Equals("Robot"))
+                    if (!result.Type.Equals("ROBOT"))
                     {
                         result = NodeManagement.Get(Job.LastNode);
                     }
-                    if (!result.Type.Equals("Robot"))
+                    if (!result.Type.Equals("ROBOT"))
                     {
                         logger.Debug("(GetPosNode) Robot not found");
                         return null;
@@ -746,7 +746,7 @@ namespace TransferControl.Engine
                     break;
                 case "NextRobot":
                     Node Target;
-                    if (Node.Type.Equals("Robot"))
+                    if (Node.Type.Equals("ROBOT"))
                     {
                         Target = NodeManagement.Get(Node.DefaultAligner);
                     }
@@ -785,7 +785,7 @@ namespace TransferControl.Engine
                     case Transaction.Command.RobotType.Put:
                     case Transaction.Command.RobotType.WaitBeforePut:
                     case Transaction.Command.RobotType.PutWithoutBack:
-                        if (target.Type.Equals("LoadPort"))
+                        if (target.Type.Equals("LOADPORT"))
                         {
                             txn.Slot = TargetJob.DestinationSlot;
                             txn.Arm = TargetJob.Slot;
@@ -878,11 +878,11 @@ namespace TransferControl.Engine
                 {
                     case "Robot":
                         Node = GetPosNode(Action.EqpType, TargetJob, FinNode);
-                        if (!Node.Type.Equals("Robot"))
+                        if (!Node.Type.Equals("ROBOT"))
                         {
                             Node = NodeManagement.Get(TargetJob.LastNode);
                         }
-                        if (!Node.Type.Equals("Robot"))
+                        if (!Node.Type.Equals("ROBOT"))
                         {
                             logger.Debug("(TodoAction) Robot not found");
                             logger.Debug(JsonConvert.SerializeObject(Action));
@@ -1281,13 +1281,13 @@ namespace TransferControl.Engine
                 if (Txn.TargetJobs.Count != 0)
                 {
                     TargetJob = Txn.TargetJobs[0];
-                    if (Node.Type.Equals("Robot"))
+                    if (Node.Type.Equals("ROBOT"))
                     {
                         Node.CurrentPosition = Txn.Position;
                     }//分裝置別
                     switch (Node.Type)
                     {
-                        case "LoadPort":
+                        case "LOADPORT":
                             switch (Txn.Method)
                             {
 
@@ -1347,7 +1347,7 @@ namespace TransferControl.Engine
                                         {
                                             //檢查到LoadPort狀態不允許Robot存取
                                             var findRoute = from rt in Node.RouteTable
-                                                            where rt.NodeType.Equals("Robot")
+                                                            where rt.NodeType.Equals("ROBOT")
                                                             select rt;
                                             foreach (Node.Route rt in findRoute)
                                             {//暫停Robot所有動作
@@ -1432,7 +1432,7 @@ namespace TransferControl.Engine
 
 
                             break;
-                        case "Robot":
+                        case "ROBOT":
 
                             if (!_Mode.Equals("Stop"))
                             {
@@ -1465,7 +1465,7 @@ namespace TransferControl.Engine
 
                             }
                             break;
-                        case "Aligner":
+                        case "ALIGNER":
                         case "OCR":
 
                             if (!_Mode.Equals("Stop"))
@@ -1592,7 +1592,7 @@ namespace TransferControl.Engine
                     logger.Debug("On_Command_Finished:" + Txn.Method + ":" + Txn.Method);
                     switch (Node.Type)
                     {
-                        case "Robot":
+                        case "ROBOT":
                             UpdateJobLocation(Node, Txn);
                             UpdateNodeStatus(Node, Txn);
                             if (!_Mode.Equals("Stop"))
@@ -1637,7 +1637,7 @@ namespace TransferControl.Engine
                             }
 
                             break;
-                        case "Aligner":
+                        case "ALIGNER":
                         case "OCR":
                             UpdateNodeStatus(Node, Txn);
                             if (Node.Type.Equals("OCR"))
@@ -1735,7 +1735,7 @@ namespace TransferControl.Engine
 
                             }
                             break;
-                        case "LoadPort":
+                        case "LOADPORT":
                             UpdateNodeStatus(Node, Txn);
                             switch (Txn.Method)
                             {
@@ -1759,7 +1759,7 @@ namespace TransferControl.Engine
 
 
 
-                    if (!Node.Type.Equals("LoadPort"))//LoadPort 只能在Mapping完成後關閉安全鎖
+                    if (!Node.Type.Equals("LOADPORT"))//LoadPort 只能在Mapping完成後關閉安全鎖
                     {
                         Node.InterLock = false;
                     }
@@ -1823,7 +1823,7 @@ namespace TransferControl.Engine
 
             switch (Node.Type)
             {
-                case "Robot":
+                case "ROBOT":
 
                     switch (Txn.Method)
                     {
@@ -1911,7 +1911,7 @@ namespace TransferControl.Engine
                             break;
                     }
                     break;
-                case "Aligner":
+                case "ALIGNER":
 
                     switch (Txn.Method)
                     {
@@ -1929,7 +1929,7 @@ namespace TransferControl.Engine
                             break;
                     }
                     break;
-                case "LoadPort":
+                case "LOADPORT":
                     switch (Txn.Method)
                     {
                         case Transaction.Command.LoadPortType.MappingLoad:
@@ -1968,7 +1968,7 @@ namespace TransferControl.Engine
             }
             switch (Node.Type)
             {
-                case "Robot":
+                case "ROBOT":
                     switch (Txn.Method)
                     {
                         case Transaction.Command.RobotType.DoubleGet:
@@ -1978,7 +1978,7 @@ namespace TransferControl.Engine
                                 Job tmp;
                                 TargetNode5.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
                                 //LoadPort 空的Slot要塞假資料
-                                if (TargetNode5.Type.Equals("LoadPort"))
+                                if (TargetNode5.Type.Equals("LOADPORT"))
                                 {
                                     tmp = new Job();
                                     tmp.Job_Id = "No wafer";

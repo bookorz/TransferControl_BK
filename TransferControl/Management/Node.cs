@@ -194,7 +194,7 @@ namespace TransferControl.Management
             PutOutArm = "";
             UnLockByJob = "";
             State = "Idle";
-            if (Type.Equals("LoadPort"))
+            if (Type.Equals("LOADPORT"))
             {
                 State = "Ready To Load";
             }
@@ -347,7 +347,7 @@ namespace TransferControl.Management
                 {
                     Route t = findRoute.First();
                     txn.Point = t.Point;
-                    if (t.NodeType.Equals("LoadPort"))
+                    if (t.NodeType.Equals("LOADPORT"))
                     {
                         Node port = NodeManagement.Get(t.NodeName);
                         if (port != null)
@@ -365,7 +365,7 @@ namespace TransferControl.Management
 
                 switch (this.Type)
                 {
-                    case "LoadPort":
+                    case "LOADPORT":
                         switch (txn.Method)
                         {
                             case Transaction.Command.LoadPortType.SetOpAccessBlink:
@@ -493,7 +493,7 @@ namespace TransferControl.Management
                                 break;
                         }
                         break;
-                    case "Robot":
+                    case "ROBOT":
                         switch (txn.Method)
                         {
 
@@ -592,7 +592,7 @@ namespace TransferControl.Management
                                 break;
                         }
                         break;
-                    case "Aligner":
+                    case "ALIGNER":
                         switch (txn.Method)
                         {
                             case Transaction.Command.AlignerType.GetStatus:
@@ -682,7 +682,7 @@ namespace TransferControl.Management
                         break;
                 }
 
-                if (this.Type.Equals("Robot"))
+                if (this.Type.Equals("ROBOT"))
                 {
                     if (txn.TargetJobs.Count == 0)
                     {
@@ -742,7 +742,7 @@ namespace TransferControl.Management
 
                         return false;
                     }
-                    if (this.Type.Equals("LoadPort"))
+                    if (this.Type.Equals("LOADPORT"))
                     {
                         this.InterLock = true;
                     }
@@ -764,7 +764,7 @@ namespace TransferControl.Management
                 {
                     logger.Debug("SendCommand fail.");
                     result = false;
-                    if (this.Type.Equals("LoadPort"))
+                    if (this.Type.Equals("LOADPORT"))
                     {
                         this.InterLock = false;
                     }

@@ -25,7 +25,7 @@ namespace TransferControl.Management
         {
             NodeList = new ConcurrentDictionary<string, Node>();
             NodeListByCtrl = new ConcurrentDictionary<string, Node>();
-            string Sql = @"SELECT t.node_id AS name,t.controller_id AS controller,t.conn_address AS adrno, t.node_type AS TYPE,t.vendor AS brand,t.bypass,t.enable_flg AS Enable,t.default_aligner AS defaultaligner,t.alternative_aligner AS alternativealigner,t.route_table AS routetable
+            string Sql = @"SELECT UPPER(t.node_id) AS name,UPPER(t.controller_id) AS controller,t.conn_address AS adrno, UPPER(t.node_type) AS TYPE,UPPER(t.vendor) AS brand,t.bypass,t.enable_flg AS Enable,UPPER(t.default_aligner) AS defaultaligner,UPPER(t.alternative_aligner) AS alternativealigner,t.route_table AS routetable
                                 FROM config_node t";
             DataTable dt = dBUtil.GetDataTable(Sql, null);
             string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);
@@ -135,7 +135,7 @@ namespace TransferControl.Management
             List<Node> result = new List<Node>();
 
             var findPort = from port in NodeList.Values.ToList()
-                           where port.Type.Equals("LoadPort")
+                           where port.Type.Equals("LOADPORT")
                            select port;
 
             if (findPort.Count() != 0)
@@ -152,7 +152,7 @@ namespace TransferControl.Management
             List<Node> result = new List<Node>();
 
             var findPort = from port in NodeList.Values.ToList()
-                           where port.Type.Equals("LoadPort") && port.Mode.Equals(Mode)
+                           where port.Type.Equals("LOADPORT") && port.Mode.Equals(Mode)
                            select port;
 
             if (findPort.Count() != 0)
@@ -169,7 +169,7 @@ namespace TransferControl.Management
             List<Node> result = new List<Node>();
 
             var findRobot = from robot in NodeList.Values.ToList()
-                            where robot.Type.Equals("Robot") && robot.Enable == true
+                            where robot.Type.Equals("ROBOT") && robot.Enable == true
                             select robot;
 
             if (findRobot.Count() != 0)
@@ -205,7 +205,7 @@ namespace TransferControl.Management
             foreach (Node each in NodeList.Values.ToList())
             {
 
-                if (each.CurrentPosition.Equals(Position) && !each.Name.Equals(filtName) && each.Type.Equals("Robot"))
+                if (each.CurrentPosition.Equals(Position) && !each.Name.Equals(filtName) && each.Type.Equals("ROBOT"))
                 {
                     result = each;
                 }
@@ -230,7 +230,7 @@ namespace TransferControl.Management
             foreach (Node.Route eachRt in ProcessNode.RouteTable)
             {
                 Node tmp;
-                if (eachRt.NodeType.Equals("Robot"))
+                if (eachRt.NodeType.Equals("ROBOT"))
                 {
                     if (NodeList.TryGetValue(eachRt.NodeName, out tmp))
                     {
@@ -261,7 +261,7 @@ namespace TransferControl.Management
             foreach (Node.Route eachRt in Dest.RouteTable)
             {
 
-                if (eachRt.NodeType.Equals("Robot"))
+                if (eachRt.NodeType.Equals("ROBOT"))
                 {
                     if (NodeList.TryGetValue(eachRt.NodeName, out result))
                     {
@@ -296,7 +296,7 @@ namespace TransferControl.Management
 
             foreach (Node.Route eachRt in OCR.RouteTable)
             {
-                if (eachRt.NodeType.Equals("Aligner"))
+                if (eachRt.NodeType.Equals("ALIGNER"))
                 {
                     if (NodeList.TryGetValue(eachRt.NodeName, out result))
                     {

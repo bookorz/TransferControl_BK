@@ -372,19 +372,19 @@ namespace TransferControl.Controller
                                 case ReturnMessage.ReturnType.Excuted:
                                     TransactionRecord.Update(Txn, ReturnMsg);
                                     _ReportTarget.On_Command_Excuted(Node, Txn, ReturnMsg);
-                                    if (Txn.CommandType.Equals("CMD") && !Node.Type.Equals("LoadPort"))
+                                    if (Txn.CommandType.Equals("CMD") && !Node.Type.Equals("LOADPORT"))
                                     {
                                         _ReportTarget.On_Node_State_Changed(Node, "Run");
                                     }
                                     break;
                                 case ReturnMessage.ReturnType.Finished:
                                     TransactionRecord.Update(Txn, ReturnMsg);
-                                    if (Node.Type.Equals("LoadPort"))
+                                    if (Node.Type.Equals("LOADPORT"))
                                     {
                                         Node.InterLock = false;
                                     }
                                     _ReportTarget.On_Command_Finished(Node, Txn, ReturnMsg);
-                                    if (!Node.Type.Equals("LoadPort"))
+                                    if (!Node.Type.Equals("LOADPORT"))
                                     {
                                         _ReportTarget.On_Node_State_Changed(Node, "Idle");
                                     }
@@ -393,7 +393,7 @@ namespace TransferControl.Controller
                                     break;
                                 case ReturnMessage.ReturnType.Error:
                                     TransactionRecord.Update(Txn, ReturnMsg);
-                                    if (Node.Type.Equals("LoadPort"))
+                                    if (Node.Type.Equals("LOADPORT"))
                                     {
                                         Node.InterLock = false;
                                     }
