@@ -26,20 +26,15 @@ namespace TransferControl.Management
 
                 keyValues.Add("@node_Name", NodeName);
                 keyValues.Add("@node_state", NewState);
-                keyValues.Add("@update_time", UpdateTime);
+                keyValues.Add("@update_time", UpdateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
 
 
 
-                int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-                if (ReturnVal != 0)
-                {
+                 dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+               
                     NodeStateAddHis(NodeName, OldState, NewState, UpdateTime);
                     result = true;
-                }
-                else
-                {
-                    logger.Error("Update error, no data update.");
-                }
+              
 
             }
             catch (Exception e)
@@ -60,15 +55,12 @@ namespace TransferControl.Management
             keyValues.Add("@node_name", NodeName);
             keyValues.Add("@old_state", OldState);
             keyValues.Add("@new_state", NewState);
-            keyValues.Add("@update_time", UpdateTime);
+            keyValues.Add("@update_time", UpdateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
 
 
 
-            int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-            if (ReturnVal == 0)
-            {
-                logger.Error("Update error, no data update.");
-            }
+            dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+          
         }
 
         public static bool EqpStateUpdate(string EqpName, string OldState, string NewState)
@@ -86,20 +78,15 @@ namespace TransferControl.Management
 
                 keyValues.Add("@eqp_Name", EqpName);
                 keyValues.Add("@eqp_state", NewState);
-                keyValues.Add("@update_time", UpdateTime);
+                keyValues.Add("@update_time", UpdateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
 
 
 
-                int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-                if (ReturnVal != 0)
-                {
+                dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+                
                     EqpStateAddHis(EqpName, OldState, NewState, UpdateTime);
                     result = true;
-                }
-                else
-                {
-                    logger.Error("Update error, no data update.");
-                }
+               
 
             }
             catch (Exception e)
@@ -120,15 +107,12 @@ namespace TransferControl.Management
             keyValues.Add("@eqp_name", EqpName);
             keyValues.Add("@old_state", OldState);
             keyValues.Add("@new_state", NewState);
-            keyValues.Add("@update_time", UpdateTime);
+            keyValues.Add("@update_time", UpdateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
 
 
 
-            int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-            if (ReturnVal == 0)
-            {
-                logger.Error("Update error, no data update.");
-            }
+           dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+            
         }
     }
 

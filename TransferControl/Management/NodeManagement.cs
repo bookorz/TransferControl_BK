@@ -41,6 +41,7 @@ namespace TransferControl.Management
                     NodeListByCtrl.TryAdd(each.Controller + each.AdrNo, each);
                 }
             }
+            
         }
 
         public static void InitialNodes()
@@ -193,7 +194,7 @@ namespace TransferControl.Management
         {
             Node result = null;
 
-            NodeList.TryGetValue(Name, out result);
+            NodeList.TryGetValue(Name.ToUpper(), out result);
 
             return result;
         }
@@ -217,9 +218,27 @@ namespace TransferControl.Management
         public static Node GetByController(string DeviceName, string NodeAdr)
         {
             Node result = null;
-
+            
             NodeListByCtrl.TryGetValue(DeviceName + NodeAdr, out result);
 
+            return result;
+        }
+
+        public static Node GetOCRByController(string DeviceName)
+        {
+            Node result = null;
+
+            var node = from LD in NodeManagement.GetList()
+                       where LD.Controller.Equals(DeviceName)
+                       select LD;
+            if (node.Count() != 0)
+            {
+                result = node.First();
+                if (!result.Type.Equals("OCR"))
+                {
+                    result = null;
+                }
+            }
             return result;
         }
 

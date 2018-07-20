@@ -130,14 +130,11 @@ namespace TransferControl.Management
                 keyValues.Add("@alarm_type", alm.Type);
                 keyValues.Add("@is_stop", alm.IsStop);
                 keyValues.Add("@need_reset", alm.NeedReset);
-                keyValues.Add("@time_stamp", alm.TimeStamp);
+                keyValues.Add("@time_stamp", alm.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
+                
 
-
-                int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-                if (ReturnVal == 0)
-                {
-                    logger.Error("InsertToDB error.");
-                }
+                dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+                
 
             }
             catch (Exception e)

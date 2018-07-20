@@ -34,6 +34,7 @@ namespace TransferControl.Engine
         /// <param name="ReportTarget"></param>
         public RouteControl(IEngineReport ReportTarget)
         {
+            EqpState = "Idle";
             _Mode = "Stop";
             _EngReport = ReportTarget;
 
@@ -42,6 +43,7 @@ namespace TransferControl.Engine
 
             //初始化所有Node
             NodeManagement.LoadConfig();
+           
             //初始化傳送腳本
             PathManagement.LoadConfig();
             //初始化命令腳本
@@ -94,7 +96,7 @@ namespace TransferControl.Engine
                 {
                     if (port.Available && port.Fetchable)
                     {
-                        ProcessRecord.AddDetail(port, "Continue", "EXECUTING");
+                        ProcessRecord.AddDetail(port, "Continue", "EXECUTING", DateTime.Now);
                         
                     }
                 }
@@ -134,7 +136,7 @@ namespace TransferControl.Engine
                 {
                     if(port.Available && port.Fetchable)
                     {
-                        ProcessRecord.AddDetail(port,"Pause","PAUSED");
+                        ProcessRecord.AddDetail(port,"Pause","PAUSED", DateTime.Now);
                         
                     }
                 }
@@ -163,7 +165,7 @@ namespace TransferControl.Engine
                     port.Available = false;
                     port.Fetchable = false;
                     port.ReserveList.Clear();
-                    ProcessRecord.AddDetail(port, "Abort", "ABORTED");
+                    ProcessRecord.AddDetail(port, "Abort", "ABORTED",DateTime.Now);
                     foreach (Job j in port.JobList.Values.ToList())
                     {
                         j.UnAssignPort();
@@ -219,7 +221,7 @@ namespace TransferControl.Engine
 
                     logger.Debug("等待可用Foup中");
                     SpinWait.SpinUntil(() => (from LD in NodeManagement.GetLoadPortList()
-                                              where LD.Available == true && (LD.Mode.Equals("LD") || LD.Mode.Equals("LU"))
+                                              where LD.Available == true && LD.JobList.Count!=0 && (LD.Mode.Equals("LD") || LD.Mode.Equals("LU"))
                                               select LD).Count() != 0 || _Mode.Equals("Stop"), SpinWaitTimeOut);
                     if ((from LD in NodeManagement.GetLoadPortList()
                          where LD.Available == true
@@ -288,7 +290,7 @@ namespace TransferControl.Engine
                             LapsedWfCount += (from jb in tmp[0].JobList.Values
                                               where jb.MapFlag && !jb.ProcessFlag && jb.NeedProcess
                                               select jb).Count();
-                            ProcessRecord.AddDetail(tmp[0],"Start","EXECUTING");
+                            ProcessRecord.AddDetail(tmp[0],"Start","EXECUTING", DateTime.Now);
                         }
                         else
                         {
@@ -439,7 +441,7 @@ namespace TransferControl.Engine
                             {
                                 PortNode.Used = false;
                                 _EngReport.On_Port_Finished(PortNode.Name, FormName);
-                                ProcessRecord.AddDetail(PortNode,"Finish","COMPLETE");
+                                ProcessRecord.AddDetail(PortNode,"Finish","COMPLETE", DateTime.Now);
                                 PortNode.PrID = "";
                             }
                         }
@@ -1271,6 +1273,7 @@ namespace TransferControl.Engine
                 {
                     case Transaction.Command.RobotType.Reset:
                         Node.State = Node.LastState;
+                        AlarmManagement.Remove(Node.Name);
                         _EngReport.On_Node_State_Changed(Node, Node.State);
                         break;
                 }

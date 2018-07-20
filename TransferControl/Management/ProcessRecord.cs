@@ -49,16 +49,17 @@ namespace TransferControl.Management
 
             try
             {
-
+                DateTime time_stamp = DateTime.Now;
                 if (Port.PrID.Equals(""))
                 {
                     Port.PrID = GetUUID();
                 }
                 string SQL = @"insert into log_process_job (pr_id,foup_id,slot_list,process_cnt,create_time,time_stamp)
-                                    values(@pr_id,@foup_id,@slot_list,@process_cnt,@create_time,now())";
+                                    values(@pr_id,@foup_id,@slot_list,@process_cnt,@create_time,@time_stamp)";
 
                 keyValues.Add("@pr_id", Port.PrID);
                 keyValues.Add("@foup_id", Port.FoupID);
+
                 var findJob = from j in Port.JobList.Values.ToList()
                               where j.NeedProcess
                               select j;
@@ -67,7 +68,7 @@ namespace TransferControl.Management
                 string SlotList = "";
                 foreach (Job job in tmp)
                 {
-                   
+
                     if (!SlotList.Equals(""))
                     {
                         SlotList += ",";
@@ -76,19 +77,14 @@ namespace TransferControl.Management
                 }
                 keyValues.Add("@slot_list", SlotList);
                 keyValues.Add("@process_cnt", findJob.Count().ToString());
-                keyValues.Add("@create_time", DateTime.Now);
+                keyValues.Add("@create_time", time_stamp.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
+                keyValues.Add("@time_stamp", time_stamp.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
 
+                dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
 
-                int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-                if (ReturnVal == 0)
-                {
-                    logger.Error("NewPr error.");
-                }
-                else
-                {
-                    AddDetail(Port, "Create", "QUEUE");
-                    AddSubstrate(Port);
-                }
+                AddDetail(Port, "Create", "QUEUE", time_stamp);
+                AddSubstrate(Port, time_stamp);
+
 
             }
             catch (Exception e)
@@ -105,8 +101,8 @@ namespace TransferControl.Management
 
             try
             {
-                AddDetail(Port, "Abort", "ABORTED");
-                
+                AddDetail(Port, "Abort", "ABORTED", DateTime.Now);
+
                 Port.PrID = "";
             }
             catch (Exception e)
@@ -123,8 +119,8 @@ namespace TransferControl.Management
 
             try
             {
-                AddDetail(Port, "Finish", "COMPLETE");
-                
+                AddDetail(Port, "Finish", "COMPLETE", DateTime.Now);
+
                 Port.PrID = "";
             }
             catch (Exception e)
@@ -134,7 +130,7 @@ namespace TransferControl.Management
 
         }
 
-        public static void AddDetail(Node Port, string event_type, string job_status)
+        public static void AddDetail(Node Port, string event_type, string job_status, DateTime time_stamp)
         {
             Dictionary<string, object> keyValues = new Dictionary<string, object>();
 
@@ -147,28 +143,10 @@ namespace TransferControl.Management
                 keyValues.Add("@pr_id", Port.PrID);
                 keyValues.Add("@event_type", event_type);
                 keyValues.Add("@job_status", job_status);
-                keyValues.Add("@event_time", DateTime.Now);
+                keyValues.Add("@event_time", time_stamp.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
 
-                int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-                if (ReturnVal == 0)
-                {
-                    logger.Error("AddDetail error.");
-                }
-                else
-                {
-                    
-                    //if (!event_type.Equals("Start") && !event_type.Equals("Finish") && !event_type.Equals("Create"))
-                    //{
-                    //    foreach (Job j in Port.JobList.Values.ToList())
-                    //    {
-
-                    //        if (j.NeedProcess)
-                    //        {
-                    //            ProcessRecord.updateSubstrateStatus(Port.PrID, j, job_status);
-                    //        }
-                    //    }
-                    //}
-                }
+                dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+                
 
             }
             catch (Exception e)
@@ -177,9 +155,9 @@ namespace TransferControl.Management
             }
         }
 
-        public static void AddSubstrate(Node Port)
+        public static void AddSubstrate(Node Port, DateTime time_stamp)
         {
-            
+
 
             try
             {
@@ -193,8 +171,10 @@ namespace TransferControl.Management
                     Node FromPort = NodeManagement.Get(Job.FromPort);
                     Node ToPort = NodeManagement.Get(Job.Destination);
                     string SQL = @"insert into log_process_job_substrate
-(pr_id,host_id,from_position,from_position_slot,to_position,to_position_slot,from_foup_id,to_foup_id,job_status,ocr_result,ocr_path,create_time)
-values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_position_slot,@from_foup_id,@to_foup_id,@job_status,@ocr_result,@ocr_path,@create_time)";
+(pr_id,host_id,from_position,from_position_slot,to_position,to_position_slot,from_foup_id
+,to_foup_id,job_status,ocr_result,ocr_path,create_time,time_stamp)
+values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,
+@to_position_slot,@from_foup_id,@to_foup_id,@job_status,@ocr_result,@ocr_path,@create_time,@time_stamp)";
                     Dictionary<string, object> keyValues = new Dictionary<string, object>();
                     keyValues.Add("@pr_id", Port.PrID);
                     keyValues.Add("@host_id", Job.Host_Job_Id);
@@ -207,14 +187,12 @@ values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_posit
                     keyValues.Add("@job_status", "QUEUED");
                     keyValues.Add("@ocr_result", "");
                     keyValues.Add("@ocr_path", "");
-                    keyValues.Add("@create_time", DateTime.Now);
 
+                    keyValues.Add("@create_time", time_stamp.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
+                    keyValues.Add("@time_stamp", time_stamp.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
 
-                    int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-                    if (ReturnVal == 0)
-                    {
-                        logger.Error("AddSubstrate error.");
-                    }
+                    dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+                   
                 }
 
             }
@@ -232,20 +210,17 @@ values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_posit
             {
 
                 string SQL = @"update log_process_job_substrate t
-                                set t.start_time = now()
+                                set t.start_time = @start_time
                                 where t.pr_id = @pr_id                         
                                 and t.from_position_slot = @from_position_slot";
 
                 keyValues.Add("@pr_id", pr_id);
-               
-                keyValues.Add("@from_position_slot", Job.FromPortSlot);
-               
 
-                int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-                if (ReturnVal == 0)
-                {
-                    logger.Error("UpdateSubstrateStart error.");
-                }
+                keyValues.Add("@from_position_slot", Job.FromPortSlot);
+                keyValues.Add("@start_time", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
+
+                 dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+                
 
             }
             catch (Exception e)
@@ -262,20 +237,17 @@ values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_posit
             {
 
                 string SQL = @"update log_process_job_substrate t
-                                set t.end_time = now()
+                                set t.end_time = @end_time
                                 where t.pr_id = @pr_id                         
                                 and t.from_position_slot = @from_position_slot";
 
                 keyValues.Add("@pr_id", pr_id);
 
                 keyValues.Add("@from_position_slot", Job.FromPortSlot);
+                keyValues.Add("@end_time", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
 
-
-                int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-                if (ReturnVal == 0)
-                {
-                    logger.Error("UpdateSubstrateEnd error.");
-                }
+                dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+                
 
             }
             catch (Exception e)
@@ -297,15 +269,12 @@ values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_posit
                                 and t.from_position_slot = @from_position_slot";
 
                 keyValues.Add("@pr_id", pr_id);
-                
+
                 keyValues.Add("@from_position_slot", Job.FromPortSlot);
                 keyValues.Add("@job_status", JobStatus);
 
-                int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-                if (ReturnVal == 0)
-                {
-                    logger.Error("updateSubstrateStatus error.");
-                }
+                 dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+               
 
             }
             catch (Exception e)
@@ -326,17 +295,14 @@ values(@pr_id,@host_id,@from_position,@from_position_slot,@to_position,@to_posit
                                 where t.pr_id = @pr_id                               
                                 and t.from_position_slot = @from_position_slot";
 
-                keyValues.Add("@pr_id", pr_id);              
+                keyValues.Add("@pr_id", pr_id);
                 keyValues.Add("@from_position_slot", Job.FromPortSlot);
                 keyValues.Add("@ocr_result", Job.Host_Job_Id);
                 keyValues.Add("@ocr_path", Job.OCRImgPath);
                 keyValues.Add("@ocr_score", Job.OCRScore);
 
-                int ReturnVal = dBUtil.ExecuteNonQuery(SQL, keyValues);
-                if (ReturnVal == 0)
-                {
-                    logger.Error("updateSubstrateStatus error.");
-                }
+               dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+                
 
             }
             catch (Exception e)

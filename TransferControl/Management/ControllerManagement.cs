@@ -21,6 +21,13 @@ namespace TransferControl.Management
 
         public static void LoadConfig(ICommandReport Report)
         {
+            if (Controllers != null)
+            {
+                foreach(DeviceController each in Controllers.Values)
+                {
+                    each.Close();
+                }
+            }
             Controllers = new ConcurrentDictionary<string, DeviceController>();
             string Sql = @"select UPPER(t.node_function_name) as DeviceName,t.node_function_type as DeviceType,
                             case when t.conn_type = 'Socket' then  t.conn_address else '' end as IPAdress ,
@@ -54,7 +61,7 @@ namespace TransferControl.Management
         {
             DeviceController result = null;
 
-            Controllers.TryGetValue(Name, out result);
+            Controllers.TryGetValue(Name.ToUpper(), out result);
 
             return result;
         }
@@ -76,7 +83,7 @@ namespace TransferControl.Management
         {
             foreach (DeviceController each in Controllers.Values.ToList())
             {
-                if (!each._Config.DeviceType.Equals("HST"))
+                if (!each._Config.DeviceType.Equals("HST")&& !each._Config.DeviceType.Equals("COGNEX"))
                 {
                     each.Connect();
                 }

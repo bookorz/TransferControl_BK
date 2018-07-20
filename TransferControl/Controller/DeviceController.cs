@@ -133,6 +133,10 @@ namespace TransferControl.Controller
 
                 key = Txn.Seq;
             }
+            else if (_Config.DeviceType.ToUpper().Equals("HST") || _Config.DeviceType.ToUpper().Equals("COGNEX"))
+            {
+                key = "1"  +Txn.Type;
+            }
             else
             {
                 key = Txn.AdrNo + Txn.Type;
@@ -222,6 +226,9 @@ namespace TransferControl.Controller
                     {
                         key = ReturnMsg.Seq;
 
+                    }else if(_Config.DeviceType.ToUpper().Equals("HST")|| _Config.DeviceType.ToUpper().Equals("COGNEX"))
+                    {
+                        key = "1" + ReturnMsg.Command;
                     }
                     else
                     {
@@ -280,7 +287,12 @@ namespace TransferControl.Controller
                             }
                             else
                             {
+                                
                                 Node = NodeManagement.GetByController(_Config.DeviceName, ReturnMsg.NodeAdr);
+                                if (Node == null)
+                                {
+                                    Node = NodeManagement.GetOCRByController(_Config.DeviceName);
+                                }
                             }
                             //lock (TransactionList)
                             //{

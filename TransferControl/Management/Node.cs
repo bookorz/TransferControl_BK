@@ -213,7 +213,7 @@ namespace TransferControl.Management
 
             Used = false;
 
-            if (Type == "LoadPort")
+            if (Type.Equals("LOADPORT"))
             {
                 Available = false;
                 Mode = "UD";
