@@ -39,7 +39,7 @@ namespace TransferControl.Controller
             switch (Config.ConnectionType)
             {
                 case "Socket":
-                    conn = new SocketClient(Config.IPAdress, Config.Port, this);
+                    conn = new SocketClient(Config, this);
                     break;
                 case "ComPort":
                     conn = new ComPortClient(Config, this);

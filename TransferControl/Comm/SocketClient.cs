@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TransferControl.Controller;
 
 namespace TransferControl.Comm
 {
@@ -20,20 +21,20 @@ namespace TransferControl.Comm
         int SPort = 23;
 
         int RDataLen = 100;  //固定長度傳送資料~ 可以針對自己的需要改長度 
+        DeviceConfig cfg;
 
 
-        
 
         IConnectionReport ConnReport;
 
-        public SocketClient(string IP, int Port, IConnectionReport _ConnReport)
+        public SocketClient(DeviceConfig _Config, IConnectionReport _ConnReport)
         {
-            RmIp = IP;
-            SPort = Port;
+            RmIp = _Config.IPAdress;
+            SPort = _Config.Port;
             ConnReport = _ConnReport;
+            cfg = _Config;
 
 
-            
         }
 
         // 連線
@@ -114,19 +115,38 @@ namespace TransferControl.Comm
                     }
                     // 程式會被 hand 在此, 等待接收來自 Server 端傳來的資料
 
-                    IntAcceptData = SckSPort.Receive(clientData);
+                    
 
                     // 往下就自己寫接收到來自Server端的資料後要做什麼事唄~^^”
+                    string S = "";
+                    switch (cfg.DeviceType.ToUpper())
+                    {
+                        case "TDK":
+                            while (true)
+                            {
+                                IntAcceptData = SckSPort.Receive(clientData);
+                                S += Encoding.Default.GetString(clientData, 0, IntAcceptData);
+                                if(S.IndexOf(Convert.ToChar(3)) != -1)
+                                {
+                                    break;
+                                }
+                            }
+                            break;
+                        case "SANWA":
+                            IntAcceptData = SckSPort.Receive(clientData);
+                            S = Encoding.Default.GetString(clientData, 0, IntAcceptData);
+                            break;
+                    }
 
-                    string S = Encoding.Default.GetString(clientData, 0, IntAcceptData);
+
                     //Console.WriteLine(S);
                     //logger.Info("[Rev<--]" + S.Replace("\n", "") + "(From " + Desc + " " + RmIp + ":" + SPort + ")");
                     if (!S.Trim().Equals(""))
                     {
-                        
+
                         ThreadPool.QueueUserWorkItem(new WaitCallback(ConnReport.On_Connection_Message), S);
                         //ConnReport.On_Connection_Message(S);
-                        
+
                     }
                 }
 

@@ -167,8 +167,8 @@ namespace TransferControl.Management
         /// 路徑表
         /// </summary>
         public List<Route> RouteTable { get; set; }
-
-
+        //Demo用Condition
+        public bool PortUnloadAndLoadFinished { get; set; }
 
         public class Route
         {
@@ -222,7 +222,7 @@ namespace TransferControl.Management
             FoupReady = false;
             DestPort = "";
             LoadTime = new DateTime();
-
+            PortUnloadAndLoadFinished = false;
         }
         /// <summary>
         /// 執行命令腳本

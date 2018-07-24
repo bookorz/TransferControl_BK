@@ -25,7 +25,7 @@ namespace TransferControl.Engine
         int LapsedWfCount = 0;
         int LapsedLotCount = 0;
         public string EqpState = "";
-        
+
         public int SpinWaitTimeOut = 99999000;
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace TransferControl.Engine
 
             //初始化所有Node
             NodeManagement.LoadConfig();
-           
+
             //初始化傳送腳本
             PathManagement.LoadConfig();
             //初始化命令腳本
@@ -97,7 +97,7 @@ namespace TransferControl.Engine
                     if (port.Available && port.Fetchable)
                     {
                         ProcessRecord.AddDetail(port, "Continue", "EXECUTING", DateTime.Now);
-                        
+
                     }
                 }
             }
@@ -132,12 +132,12 @@ namespace TransferControl.Engine
                     txn.FormName = "PauseProcedure";
                 }
                 _EngReport.On_Eqp_State_Changed(EqpState, "Pause");
-                foreach(Node port in NodeManagement.GetLoadPortList())
+                foreach (Node port in NodeManagement.GetLoadPortList())
                 {
-                    if(port.Available && port.Fetchable)
+                    if (port.Available && port.Fetchable)
                     {
-                        ProcessRecord.AddDetail(port,"Pause","PAUSED", DateTime.Now);
-                        
+                        ProcessRecord.AddDetail(port, "Pause", "PAUSED", DateTime.Now);
+
                     }
                 }
                 EqpState = "Pause";
@@ -165,14 +165,14 @@ namespace TransferControl.Engine
                     port.Available = false;
                     port.Fetchable = false;
                     port.ReserveList.Clear();
-                    ProcessRecord.AddDetail(port, "Abort", "ABORTED",DateTime.Now);
+                    ProcessRecord.AddDetail(port, "Abort", "ABORTED", DateTime.Now);
                     foreach (Job j in port.JobList.Values.ToList())
                     {
                         j.UnAssignPort();
-                        
+
                     }
                     _EngReport.On_Mode_Changed("Stop");
-   
+
                 }
             }
 
@@ -221,7 +221,7 @@ namespace TransferControl.Engine
 
                     logger.Debug("等待可用Foup中");
                     SpinWait.SpinUntil(() => (from LD in NodeManagement.GetLoadPortList()
-                                              where LD.Available == true && LD.JobList.Count!=0 && (LD.Mode.Equals("LD") || LD.Mode.Equals("LU"))
+                                              where LD.Available == true && LD.JobList.Count != 0 && (LD.Mode.Equals("LD") || LD.Mode.Equals("LU"))
                                               select LD).Count() != 0 || _Mode.Equals("Stop"), SpinWaitTimeOut);
                     if ((from LD in NodeManagement.GetLoadPortList()
                          where LD.Available == true
@@ -235,7 +235,7 @@ namespace TransferControl.Engine
                         else
                         {
                             logger.Debug("可用Foup出現");
-                            _EngReport.On_Eqp_State_Changed(EqpState,"Run");
+                            _EngReport.On_Eqp_State_Changed(EqpState, "Run");
                             EqpState = "Run";
                         }
                         break;
@@ -290,14 +290,14 @@ namespace TransferControl.Engine
                             LapsedWfCount += (from jb in tmp[0].JobList.Values
                                               where jb.MapFlag && !jb.ProcessFlag && jb.NeedProcess
                                               select jb).Count();
-                            ProcessRecord.AddDetail(tmp[0],"Start","EXECUTING", DateTime.Now);
+                            ProcessRecord.AddDetail(tmp[0], "Start", "EXECUTING", DateTime.Now);
                         }
                         else
                         {
                             logger.Debug("RobotFetchMode " + robot.Name + " 找不到可以搬的Port");
                             robot.Phase = "2";
                             robot.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
-                            
+
                             continue;
                         }
                     }
@@ -313,7 +313,7 @@ namespace TransferControl.Engine
                 EqpState = "Idle";
                 _EngReport.On_Task_Finished(FormName.ToString(), diff.TotalSeconds.ToString(), LapsedWfCount, LapsedLotCount);
                 logger.Debug("搬運週期完成，下個周期開始");
-                
+
                 LapsedWfCount = 0;
                 LapsedLotCount = 0;
             }
@@ -378,7 +378,7 @@ namespace TransferControl.Engine
             RobotNode.GetAvailable = false;
             RobotNode.PutAvailable = false;
             RobotNode.AllDone = false;
-          
+
             if (RobotNode.JobList.Count == 0)//雙臂皆空
             {
 
@@ -403,7 +403,7 @@ namespace TransferControl.Engine
                     logger.Debug("RobotFetchMode " + RobotNode.Name + " 找不到可以搬的Port");
                     RobotNode.Phase = "2";
                     RobotNode.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
-                  
+
                     return;
                 }
                 foreach (Node PortNode in findPort)
@@ -432,7 +432,7 @@ namespace TransferControl.Engine
                             logger.Debug("RobotFetchMode " + RobotNode.Name + " 找不到可以搬的Wafer");
                             RobotNode.Phase = "2";
                             RobotNode.GetAvailable = true;//標記目前Robot可以接受其他搬送命令 
-                           
+
 
                             //因(FindNextJob())會產生兩支執行序，所以要確保場上都沒有WAFER才能觸發On_Port_Finished事件
                             if ((from Job in JobManagement.GetJobList()
@@ -441,7 +441,7 @@ namespace TransferControl.Engine
                             {
                                 PortNode.Used = false;
                                 _EngReport.On_Port_Finished(PortNode.Name, FormName);
-                                ProcessRecord.AddDetail(PortNode,"Finish","COMPLETE", DateTime.Now);
+                                ProcessRecord.AddDetail(PortNode, "Finish", "COMPLETE", DateTime.Now);
                                 PortNode.PrID = "";
                             }
                         }
@@ -456,11 +456,11 @@ namespace TransferControl.Engine
                                     if (FirstSlot == -1)
                                     {
                                         FirstSlot = Convert.ToInt16(eachJob.Slot);
-                                       // eachJob.ProcessFlag = true;
+                                        // eachJob.ProcessFlag = true;
                                         TargetJobs.Add(eachJob);
                                         RobotNode.CurrentLoadPort = PortNode.Name;
                                         //找到第一片
-                                       
+
                                         if (eachJob.AlignerFlag)
                                         {
                                             NodeManagement.Get(RobotNode.DefaultAligner).UnLockByJob = eachJob.Job_Id;
@@ -472,7 +472,7 @@ namespace TransferControl.Engine
                                         if (diff == 1)
                                         {
                                             ConsecutiveSlot = true;
-                                           // eachJob.ProcessFlag = true;
+                                            // eachJob.ProcessFlag = true;
                                             TargetJobs.Add(eachJob);
 
                                         }
@@ -482,7 +482,7 @@ namespace TransferControl.Engine
                                             ConsecutiveSlot = false;
                                         }
 
-                                       
+
                                         break;//找到第二片
                                     }
                                 }
@@ -622,7 +622,7 @@ namespace TransferControl.Engine
 
                 if (find.Count() == 0)
                 {
-                    foreach(Job j in find)
+                    foreach (Job j in find)
                     {
                         j.ProcessFlag = true;
                     }
@@ -649,7 +649,7 @@ namespace TransferControl.Engine
             try
             {
                 var find = from job in RobotNode.JobList.Values.ToList()
-                           where  job.NeedProcess
+                           where job.NeedProcess
                            select job;
                 string lastProcessNode = "";
                 if (find.Count() != 0)
@@ -1077,7 +1077,7 @@ namespace TransferControl.Engine
                         {
                             logger.Debug(Node.Name + " 等待主控權 " + Action.EqpType + ":" + Action.Method);
                             logger.Debug(Node.Name + " 等待主控權 " + Node.InterLock + "," + Node.UnLockByJob + "," + TargetJob.Job_Id);
-                            SpinWait.SpinUntil(() => ( (Node.UnLockByJob.Equals("") || Node.UnLockByJob.Equals(TargetJob.Job_Id))) || Force || _Mode.Equals("Stop"), SpinWaitTimeOut);
+                            SpinWait.SpinUntil(() => ((Node.UnLockByJob.Equals("") || Node.UnLockByJob.Equals(TargetJob.Job_Id))) || Force || _Mode.Equals("Stop"), SpinWaitTimeOut);
                             if (_Mode.Equals("Stop"))
                             {
                                 logger.Debug("離開自動模式");
@@ -1099,7 +1099,7 @@ namespace TransferControl.Engine
 
                             lock (Node)
                             {
-                                if (( (Node.UnLockByJob.Equals("") || Node.UnLockByJob.Equals(TargetJob.Job_Id))) || Force)
+                                if (((Node.UnLockByJob.Equals("") || Node.UnLockByJob.Equals(TargetJob.Job_Id))) || Force)
                                 {
                                     Node.InterLock = true;
                                     logger.Debug(Node.Name + " 取得主控權，離開排隊:" + Action.EqpType + ":" + Action.Method);
@@ -1650,16 +1650,38 @@ namespace TransferControl.Engine
                                 {
                                     if (Txn.TargetJobs.Count != 0)
                                     {
-                                        string[] OCRResult = Msg.Value.Replace("[", "").Replace("]", "").Split(',');
+                                        string[] OCRResult;
+
+                                        OCRResult = Msg.Value.Replace("[", "").Replace("]", "").Split(',');
+
                                         Txn.TargetJobs[0].Host_Job_Id = OCRResult[0];
-                                        if (OCRResult.Length >= 2)
+
+
+                                        switch (Node.Brand)
                                         {
-                                            Txn.TargetJobs[0].OCRScore = OCRResult[2];
+                                            case "HST":
+                                                if (OCRResult.Length >= 3)
+                                                {
+                                                    Txn.TargetJobs[0].OCRScore = OCRResult[2];
+                                                }
+                                                else
+                                                {
+                                                    Txn.TargetJobs[0].OCRScore = "0";
+                                                }
+
+                                                break;
+                                            case "COGNEX":
+                                                if (OCRResult.Length >= 2)
+                                                {
+                                                    Txn.TargetJobs[0].OCRScore = OCRResult[1];
+                                                }
+                                                else
+                                                {
+                                                    Txn.TargetJobs[0].OCRScore = "0";
+                                                }
+                                                break;
                                         }
-                                        else
-                                        {
-                                            Txn.TargetJobs[0].OCRScore = "0";
-                                        }
+
                                         _EngReport.On_Job_Location_Changed(Txn.TargetJobs[0]);
                                     }
                                 }
@@ -2112,7 +2134,7 @@ namespace TransferControl.Engine
                                 // logger.Debug(JsonConvert.SerializeObject(Txn.TargetJobs[i]));
                                 if (Txn.TargetJobs[i].Position.Equals(Txn.TargetJobs[i].Destination))
                                 {
-                                    
+
                                     Node from = NodeManagement.Get(Txn.TargetJobs[i].FromPort);
                                     ProcessRecord.updateSubstrateStatus(from.PrID, Txn.TargetJobs[i], "COMPLETE");
                                     ProcessRecord.UpdateSubstrateEnd(from.PrID, Txn.TargetJobs[i]);
@@ -2214,7 +2236,7 @@ namespace TransferControl.Engine
             }
             StateRecord.NodeStateUpdate(Node.Name, Node.State, Status);
             Node.State = Status;
-            
+
             _EngReport.On_Node_State_Changed(Node, Status);
         }
         /// <summary>
