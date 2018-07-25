@@ -115,7 +115,7 @@ namespace TransferControl.Comm
                     }
                     // 程式會被 hand 在此, 等待接收來自 Server 端傳來的資料
 
-                    
+
 
                     // 往下就自己寫接收到來自Server端的資料後要做什麼事唄~^^”
                     string S = "";
@@ -126,15 +126,22 @@ namespace TransferControl.Comm
                             {
                                 IntAcceptData = SckSPort.Receive(clientData);
                                 S += Encoding.Default.GetString(clientData, 0, IntAcceptData);
-                                if(S.IndexOf(Convert.ToChar(3)) != -1)
+                                if (S.IndexOf(Convert.ToChar(3)) != -1)
                                 {
                                     break;
                                 }
                             }
                             break;
                         case "SANWA":
-                            IntAcceptData = SckSPort.Receive(clientData);
-                            S = Encoding.Default.GetString(clientData, 0, IntAcceptData);
+                            while (true)
+                            {
+                                IntAcceptData = SckSPort.Receive(clientData);
+                                S += Encoding.Default.GetString(clientData, 0, IntAcceptData);
+                                if (S.IndexOf("\r") != -1)
+                                {
+                                    break;
+                                }
+                            }
                             break;
                     }
 

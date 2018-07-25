@@ -94,6 +94,17 @@ namespace TransferControl.Management
 
         }
 
+        public static void UpdateCrID(string PrID,string CrID)
+        {
+
+            Dictionary<string, object> keyValues = new Dictionary<string, object>();
+            string SQL = @"update log_process_job t set t.cj_id = @cj_id where t.pr_id = @pr_id";
+
+            keyValues.Add("@cj_id", CrID);
+            keyValues.Add("@pr_id", PrID);
+            dBUtil.ExecuteNonQueryAsync(SQL, keyValues);
+        }
+
         public static void CancelPr(Node Port)
         {
 

@@ -241,6 +241,7 @@ namespace TransferControl.Engine
                         break;
                     }
                 }
+                string CjID = ProcessRecord.GetUUID();
                 foreach (Node robot in NodeManagement.GetEnableRobotList())
                 {
                     robot.InitialObject();
@@ -272,12 +273,6 @@ namespace TransferControl.Engine
                             {
                                 return;
                             }
-                            findPort = from port in PortList
-                                       where port.Available
-                                       select port;
-                        }
-                        if (findPort.Count() != 0)
-                        {
                             List<Node> tmp = findPort.ToList();
 
                             tmp.Sort((x, y) => { return x.LoadTime.CompareTo(y.LoadTime); });
@@ -286,6 +281,8 @@ namespace TransferControl.Engine
                             tmp[0].Used = true;
                             _EngReport.On_Port_Begin(tmp[0].Name, FormName.ToString());
                             logger.Debug(robot.Name + ":指定 " + tmp[0].Name + " 開始取片");
+                            tmp[0].CjID = CjID;
+                            ProcessRecord.UpdateCrID(tmp[0].PrID, tmp[0].CjID);
                             LapsedLotCount++;
                             LapsedWfCount += (from jb in tmp[0].JobList.Values
                                               where jb.MapFlag && !jb.ProcessFlag && jb.NeedProcess

@@ -48,6 +48,10 @@ namespace TransferControl.Management
         /// </summary>
         public string FoupID { get; set; }
         /// <summary>
+        /// Control Job ID
+        /// </summary>
+        public string CjID { get; set; }
+        /// <summary>
         /// Process Request ID
         /// </summary>
         public string PrID { get; set; }
@@ -190,6 +194,7 @@ namespace TransferControl.Management
             CurrentLoadPort = "";
             FoupID = "";
             PrID = "";
+            CjID = "";
             CurrentPosition = "";
             PutOutArm = "";
             UnLockByJob = "";
