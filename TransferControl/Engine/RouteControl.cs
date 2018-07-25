@@ -256,7 +256,7 @@ namespace TransferControl.Engine
                         }
                     }
                     var findPort = from port in PortList
-                                   where port.Available == true && port.Fetchable == true
+                                   where port.Available == true && port.Fetchable == true//當沒有Port正在作業時
                                    select port;
 
                     if (findPort.Count() == 0)
@@ -273,6 +273,12 @@ namespace TransferControl.Engine
                             {
                                 return;
                             }
+                            findPort = from port in PortList
+                                       where port.Available
+                                       select port;
+                        }
+                        if (findPort.Count() != 0)
+                        {
                             List<Node> tmp = findPort.ToList();
 
                             tmp.Sort((x, y) => { return x.LoadTime.CompareTo(y.LoadTime); });

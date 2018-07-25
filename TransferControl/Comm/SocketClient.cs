@@ -143,6 +143,10 @@ namespace TransferControl.Comm
                                 }
                             }
                             break;
+                        default:
+                            IntAcceptData = SckSPort.Receive(clientData);
+                            S = Encoding.Default.GetString(clientData, 0, IntAcceptData);
+                            break;
                     }
 
 

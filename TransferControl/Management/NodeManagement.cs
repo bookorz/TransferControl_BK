@@ -25,8 +25,14 @@ namespace TransferControl.Management
         {
             NodeList = new ConcurrentDictionary<string, Node>();
             NodeListByCtrl = new ConcurrentDictionary<string, Node>();
-            string Sql = @"SELECT UPPER(t.node_id) AS name,UPPER(t.controller_id) AS controller,t.conn_address AS adrno, UPPER(t.node_type) AS TYPE,UPPER(t.vendor) AS brand,t.bypass,t.enable_flg AS Enable,UPPER(t.default_aligner) AS defaultaligner,UPPER(t.alternative_aligner) AS alternativealigner,t.route_table AS routetable
-                                FROM config_node t";
+            string Sql = @"SELECT 
+	                        UPPER(t.node_id) AS name, UPPER(t.controller_id) AS controller,
+	                        t.conn_address AS adrno, UPPER(t.node_type) AS TYPE, 
+	                        UPPER(t.vendor) AS brand,t.bypass,t.enable_flg AS ENABLE, 
+	                        UPPER(t.default_aligner) AS defaultaligner, 
+	                        UPPER(t.alternative_aligner) AS alternativealigner,
+	                        t.route_table AS routetable
+                        FROM config_node t";
             DataTable dt = dBUtil.GetDataTable(Sql, null);
             string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);
             str_json = str_json.Replace("\"[", "[").Replace("]\"", "]").Replace("\\\"", "\"");
