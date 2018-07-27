@@ -57,7 +57,7 @@ namespace TransferControl.Management
                 string SQL = @"insert into log_process_job (pr_id,foup_id,slot_list,process_cnt,create_time,time_stamp)
                                     values(@pr_id,@foup_id,@slot_list,@process_cnt,@create_time,@time_stamp)";
 
-                keyValues.Add("@pr_id", Port.PrID);
+                keyValues.Add("@pr_id", Port.PrID);               
                 keyValues.Add("@foup_id", Port.FoupID);
 
                 var findJob = from j in Port.JobList.Values.ToList()

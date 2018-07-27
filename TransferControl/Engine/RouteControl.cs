@@ -1617,6 +1617,48 @@ namespace TransferControl.Engine
                                         //取得腳本的下一步
                                         foreach (Path eachPath in Paths)
                                         {
+                                            if (!eachPath.Expression.Equals(""))
+                                            {
+                                                switch (eachPath.Expression)
+                                                {
+                                                    case "Job.AlignerFlag == true":
+                                                        if (!TargetJob.AlignerFlag)
+                                                        {
+                                                            continue;
+                                                        }
+                                                        break;
+                                                    case "Job.AlignerFlag == false":
+                                                        if (TargetJob.AlignerFlag)
+                                                        {
+                                                            continue;
+                                                        }
+                                                        break;
+                                                    case "Job.OCRFlag == true":
+                                                        if (!TargetJob.OCRFlag)
+                                                        {
+                                                            continue;
+                                                        }
+                                                        break;
+                                                    case "Job.OCRFlag == false":
+                                                        if (TargetJob.OCRFlag)
+                                                        {
+                                                            continue;
+                                                        }
+                                                        break;
+                                                    case "Job.AlignerFinished == true":
+                                                        if (!TargetJob.AlignerFinished)
+                                                        {
+                                                            continue;
+                                                        }
+                                                        break;
+                                                    case "Job.AlignerFinished == false":
+                                                        if (TargetJob.AlignerFinished)
+                                                        {
+                                                            continue;
+                                                        }
+                                                        break;
+                                                }
+                                            }
                                             if (!eachPath.ChangeToStatus.Equals(""))
                                             {
                                                 TargetJob.CurrentState = eachPath.ChangeToStatus;

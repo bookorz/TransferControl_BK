@@ -96,7 +96,7 @@ namespace TransferControl.Comm
                 ConnReport.On_Connection_Connecting("Connecting to ");
                 port.Open();
                 ConnReport.On_Connection_Connected("Connected! ");
-                switch (cfg.DeviceType.ToUpper())
+                switch (cfg.Vendor.ToUpper())
                 {
                     case "TDK":
                         port.DataReceived += new SerialDataReceivedEventHandler(TDK_DataReceived);

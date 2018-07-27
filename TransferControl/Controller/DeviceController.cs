@@ -46,9 +46,9 @@ namespace TransferControl.Controller
                     break;
 
             }
-            _Decoder = new SANWA.Utility.Decoder(Config.DeviceType);
+            _Decoder = new SANWA.Utility.Decoder(Config.Vendor);
 
-            Encoder = new SANWA.Utility.Encoder(Config.DeviceType);
+            Encoder = new SANWA.Utility.Encoder(Config.Vendor);
 
 
             this.Name = _Config.DeviceName;
@@ -128,12 +128,12 @@ namespace TransferControl.Controller
                 //Txn.CommandType = "";
             }
             string key = "";
-            if (_Config.DeviceType.ToUpper().Equals("KAWASAKI"))
+            if (_Config.Vendor.ToUpper().Equals("KAWASAKI"))
             {
 
                 key = Txn.Seq;
             }
-            else if (_Config.DeviceType.ToUpper().Equals("HST") || _Config.DeviceType.ToUpper().Equals("COGNEX"))
+            else if (_Config.Vendor.ToUpper().Equals("HST") || _Config.Vendor.ToUpper().Equals("COGNEX"))
             {
                 key = "1"  +Txn.Type;
             }
@@ -222,11 +222,11 @@ namespace TransferControl.Controller
                     }
 
                     string key = "";
-                    if (_Config.DeviceType.ToUpper().Equals("KAWASAKI"))
+                    if (_Config.Vendor.ToUpper().Equals("KAWASAKI"))
                     {
                         key = ReturnMsg.Seq;
 
-                    }else if(_Config.DeviceType.ToUpper().Equals("HST")|| _Config.DeviceType.ToUpper().Equals("COGNEX"))
+                    }else if(_Config.Vendor.ToUpper().Equals("HST")|| _Config.Vendor.ToUpper().Equals("COGNEX"))
                     {
                         key = "1" + ReturnMsg.Command;
                     }
@@ -242,7 +242,7 @@ namespace TransferControl.Controller
                         Node Node = null;
                         if (ReturnMsg != null)
                         {
-                            if (_Config.DeviceType.ToUpper().Equals("KAWASAKI"))
+                            if (_Config.Vendor.ToUpper().Equals("KAWASAKI"))
                             {
                                 if (TransactionList.TryGetValue(key, out Txn))
                                 {
@@ -270,7 +270,7 @@ namespace TransferControl.Controller
                                     return;
                                 }
                             }
-                            else if (_Config.DeviceType.ToUpper().Equals("TDK"))
+                            else if (_Config.Vendor.ToUpper().Equals("TDK"))
                             {
                                 if (TransactionList.TryGetValue(key, out Txn))
                                 {
@@ -317,7 +317,7 @@ namespace TransferControl.Controller
                                             else
                                             {
                                                 Txn.SetTimeOutMonitor(false);
-                                                Txn.SetTimeOut(30000);
+                                                Txn.SetTimeOut(60000);
                                                 Txn.SetTimeOutMonitor(true);
                                                 TransactionList.TryAdd(key, Txn);
                                             }
@@ -336,7 +336,7 @@ namespace TransferControl.Controller
                                         case ReturnMessage.ReturnType.Information:
                                             logger.Debug("Txn timmer stoped.");
                                             Txn.SetTimeOutMonitor(false);
-                                            if (_Config.DeviceType.ToUpper().Equals("TDK") && Txn.CommandType.Equals("SET"))
+                                            if (_Config.Vendor.ToUpper().Equals("TDK") && Txn.CommandType.Equals("SET"))
                                             {
                                                 ReturnMsg.Type = ReturnMessage.ReturnType.Excuted;
                                             }
@@ -470,7 +470,7 @@ namespace TransferControl.Controller
             logger.Debug(_Config.DeviceName + "(On_Transaction_TimeOut Txn is timeout:" + Txn.CommandEncodeStr);
 
             string key = "";
-            if (_Config.DeviceType.ToUpper().Equals("KAWASAKI"))
+            if (_Config.Vendor.ToUpper().Equals("KAWASAKI"))
             {
                 key = Txn.Seq;
 

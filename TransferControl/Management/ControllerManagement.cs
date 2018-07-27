@@ -31,7 +31,8 @@ namespace TransferControl.Management
             }
             Dictionary<string, object> keyValues = new Dictionary<string, object>();
             Controllers = new ConcurrentDictionary<string, DeviceController>();
-            string Sql = @"select UPPER(t.device_name) as DeviceName,t.device_type as DeviceType,
+            string Sql = @"SELECT UPPER(t.device_name) as DeviceName,t.device_type as DeviceType,
+										UPPER(t.vendor) as vendor,
                             case when t.conn_type = 'Socket' then  t.conn_address else '' end as IPAdress ,
                             case when t.conn_type = 'Socket' then  CONVERT(t.conn_prot,SIGNED) else 0 end as Port ,
                             case when t.conn_type = 'Comport' then   CONVERT(t.conn_prot,SIGNED) else 0 end as BaudRate ,
@@ -41,8 +42,9 @@ namespace TransferControl.Management
                             t.com_stop_bit as StopBit,
                             t.conn_type as ConnectionType,
                             t.enable_flg as Enable
-                            from config_controller_setting t
-                            where t.equipment_model_id = @equipment_model_id";
+                            FROM config_controller_setting t
+                            WHERE t.equipment_model_id = @equipment_model_id
+                            AND t.device_type <> 'DIO'";
             keyValues.Add("@equipment_model_id", SystemConfig.Get().SystemMode);
             DataTable dt = dBUtil.GetDataTable(Sql, keyValues);
             string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);
@@ -86,7 +88,7 @@ namespace TransferControl.Management
         {
             foreach (DeviceController each in Controllers.Values.ToList())
             {
-                if (!each._Config.DeviceType.Equals("HST")&& !each._Config.DeviceType.Equals("COGNEX"))
+                if (!each._Config.Vendor.Equals("HST")&& !each._Config.Vendor.Equals("COGNEX"))
                 {
                     each.Connect();
                 }

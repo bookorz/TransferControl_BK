@@ -119,7 +119,7 @@ namespace TransferControl.Comm
 
                     // 往下就自己寫接收到來自Server端的資料後要做什麼事唄~^^”
                     string S = "";
-                    switch (cfg.DeviceType.ToUpper())
+                    switch (cfg.Vendor.ToUpper())
                     {
                         case "TDK":
                             while (true)

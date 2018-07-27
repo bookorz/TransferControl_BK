@@ -45,9 +45,9 @@ namespace TransferControl.Management
             ProcessFlag = false;
             MapFlag = false;
             Angle = 270;
-            AlignerFlag = true;
+            AlignerFlag = false;
             NeedProcess = false;
-            OCRFlag = true;
+            OCRFlag = false;
         }
 
         public void AssignPort(string Position , string Slot)
