@@ -287,6 +287,10 @@ namespace TransferControl.Engine
                             tmp[0].Used = true;
                             _EngReport.On_Port_Begin(tmp[0].Name, FormName.ToString());
                             logger.Debug(robot.Name + ":指定 " + tmp[0].Name + " 開始取片");
+                            if (tmp[0].ByPass)
+                            {
+                                tmp[0].PortUnloadAndLoadFinished = false;
+                            }
                             tmp[0].CjID = CjID;
                             ProcessRecord.UpdateCrID(tmp[0].PrID, tmp[0].CjID);
                             LapsedLotCount++;
@@ -329,7 +333,9 @@ namespace TransferControl.Engine
         private bool CheckCycle()
         {
 
-
+            bool a =  (from port in NodeManagement.GetLoadPortList()
+                      where port.PortUnloadAndLoadFinished
+                      select port).Count() == 2;
             //bool a = (from jb in JobManagement.GetJobList()
             //          where jb.Position.IndexOf("LoadPort") != -1 && jb.MapFlag && !jb.ProcessFlag && !
             //          select jb).Count() == 0;
@@ -340,7 +346,9 @@ namespace TransferControl.Engine
                       where port.Available == true && port.Fetchable == true
                       select port).Count() == 0;
 
-            return b & c;
+            
+
+            return a & b & c;
         }
         /// <summary>
         /// 確認在席

@@ -94,7 +94,7 @@ namespace TransferControl.Comm
 
         }
 
-
+        string S = "";
         private void SckSReceiveProc()
         {
 
@@ -104,6 +104,7 @@ namespace TransferControl.Comm
                 int IntAcceptData;
 
                 byte[] clientData = new byte[RDataLen];
+                string data = "";
 
                 while (true)
                 {
@@ -118,7 +119,7 @@ namespace TransferControl.Comm
 
 
                     // 往下就自己寫接收到來自Server端的資料後要做什麼事唄~^^”
-                    string S = "";
+
                     switch (cfg.Vendor.ToUpper())
                     {
                         case "TDK":
@@ -128,8 +129,15 @@ namespace TransferControl.Comm
                                 S += Encoding.Default.GetString(clientData, 0, IntAcceptData);
                                 if (S.IndexOf(Convert.ToChar(3)) != -1)
                                 {
+                                    //logger.Debug("s:" + S);
+                                    data = S.Substring(0, S.IndexOf(Convert.ToChar(3)) + 1);
+                                    //logger.Debug("data:" + data);
+
+                                    S = S.Substring(S.IndexOf(Convert.ToChar(3)) + 1);
+                                    //logger.Debug("s:" + S);
                                     break;
                                 }
+
                             }
                             break;
                         case "SANWA":
@@ -139,33 +147,41 @@ namespace TransferControl.Comm
                                 S += Encoding.Default.GetString(clientData, 0, IntAcceptData);
                                 if (S.IndexOf("\r") != -1)
                                 {
+                                    //logger.Debug("s:" + S);
+                                    data = S.Substring(0, S.IndexOf("\r"));
+                                    //logger.Debug("data:" + data);
+
+                                    S = S.Substring(S.IndexOf("\r") + 1 );
+                                    //logger.Debug("s:" + S);
                                     break;
                                 }
                             }
+
                             break;
                         default:
                             IntAcceptData = SckSPort.Receive(clientData);
                             S = Encoding.Default.GetString(clientData, 0, IntAcceptData);
+                            data = S;
+                            S = "";
                             break;
                     }
 
+                    
 
-                    //Console.WriteLine(S);
-                    //logger.Info("[Rev<--]" + S.Replace("\n", "") + "(From " + Desc + " " + RmIp + ":" + SPort + ")");
-                    if (!S.Trim().Equals(""))
-                    {
-
-                        ThreadPool.QueueUserWorkItem(new WaitCallback(ConnReport.On_Connection_Message), S);
+                        ThreadPool.QueueUserWorkItem(new WaitCallback(ConnReport.On_Connection_Message), data);
                         //ConnReport.On_Connection_Message(S);
 
-                    }
+                    
+                    //Console.WriteLine(S);
+                    //logger.Info("[Rev<--]" + S.Replace("\n", "") + "(From " + Desc + " " + RmIp + ":" + SPort + ")");
+
                 }
 
             }
 
             catch (Exception e)
             {
-                //logger.Error("(From " + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
+                logger.Error("(From " + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
                 ConnReport.On_Connection_Disconnected("SckSReceiveProc (" + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
             }
         }
