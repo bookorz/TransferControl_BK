@@ -26,6 +26,7 @@ namespace TransferControl.Controller
         ConcurrentDictionary<string, Transaction> TransactionList = new ConcurrentDictionary<string, Transaction>();
         public string Name { get; set; }
         public string Status { get; set; }
+        private bool _IsConnected { get; set; }
         public int TrxNo = 1;
         bool WaitingForSync = false;
         string ReturnForSync = "";
@@ -53,6 +54,12 @@ namespace TransferControl.Controller
 
             this.Name = _Config.DeviceName;
             this.Status = "";
+            this._IsConnected = false;
+        }
+
+        public bool IsConnected()
+        {
+            return this._IsConnected;
         }
 
         public void ClearTransactionList()
@@ -78,6 +85,7 @@ namespace TransferControl.Controller
         {
             try
             {
+                Close();
                 conn.Connect();
             }
             catch (Exception e)
@@ -436,6 +444,7 @@ namespace TransferControl.Controller
 
         public void On_Connection_Connected(string Msg)
         {
+            this._IsConnected = true;
             this.Status = "Connected";
             _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Connected");
 
@@ -443,6 +452,7 @@ namespace TransferControl.Controller
         
         public void On_Connection_Connecting(string Msg)
         {
+            this._IsConnected = false;
             this.Status = "Connecting";
             _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Connecting");
 
@@ -450,6 +460,7 @@ namespace TransferControl.Controller
 
         public void On_Connection_Disconnected(string Msg)
         {
+            this._IsConnected = false;
             this.Status = "Disconnected";
             _ReportTarget.On_Controller_State_Changed(_Config.DeviceName, "Disconnected");
 
@@ -457,6 +468,7 @@ namespace TransferControl.Controller
 
         public void On_Connection_Error(string Msg)
         {
+            this._IsConnected = false;
             foreach (Transaction txn in TransactionList.Values.ToList())
             {
                 txn.SetTimeOutMonitor(false);

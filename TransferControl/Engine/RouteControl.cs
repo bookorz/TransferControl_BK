@@ -21,7 +21,8 @@ namespace TransferControl.Engine
         string _Mode = "";
         public bool IsInitial = false;
         DateTime StartTime = new DateTime();
-        IEngineReport _EngReport;
+        IUserInterfaceReport _UIReport;
+        IHostInterfaceReport _HostReport;
         int LapsedWfCount = 0;
         int LapsedLotCount = 0;
         public string EqpState = "";
@@ -32,12 +33,12 @@ namespace TransferControl.Engine
         /// 建構子，傳入一個事件回報對象
         /// </summary>
         /// <param name="ReportTarget"></param>
-        public RouteControl(IEngineReport ReportTarget)
+        public RouteControl(IUserInterfaceReport ReportUI,IHostInterfaceReport ReportHost = null)
         {
             EqpState = "Idle";
             _Mode = "Stop";
-            _EngReport = ReportTarget;
-
+            _UIReport = ReportUI;
+            _HostReport = ReportHost;
             //初始化所有Controller
             ControllerManagement.LoadConfig(this);
 
@@ -90,7 +91,7 @@ namespace TransferControl.Engine
                     }
                     txn.FormName = "PauseProcedure";
                 }
-                _EngReport.On_Eqp_State_Changed(EqpState, "Run");
+                _UIReport.On_Eqp_State_Changed(EqpState, "Run");
                 EqpState = "Run";
                 foreach (Node port in NodeManagement.GetLoadPortList())
                 {
@@ -131,7 +132,7 @@ namespace TransferControl.Engine
                     }
                     txn.FormName = "PauseProcedure";
                 }
-                _EngReport.On_Eqp_State_Changed(EqpState, "Pause");
+                _UIReport.On_Eqp_State_Changed(EqpState, "Pause");
                 foreach (Node port in NodeManagement.GetLoadPortList())
                 {
                     if (port.Available && port.Fetchable)
@@ -171,7 +172,7 @@ namespace TransferControl.Engine
                         j.UnAssignPort();
 
                     }
-                    _EngReport.On_Mode_Changed("Stop");
+                    _UIReport.On_Mode_Changed("Stop");
 
                 }
             }
@@ -197,11 +198,11 @@ namespace TransferControl.Engine
                     ControllerManagement.ClearTransactionList();
                     if (FormName.Equals("Running"))
                     {
-                        _EngReport.On_Mode_Changed("Running");
+                        _UIReport.On_Mode_Changed("Running");
                     }
                     else
                     {
-                        _EngReport.On_Mode_Changed("Start");
+                        _UIReport.On_Mode_Changed("Start");
                     }
                 }
             }
@@ -235,7 +236,7 @@ namespace TransferControl.Engine
                         else
                         {
                             logger.Debug("可用Foup出現");
-                            _EngReport.On_Eqp_State_Changed(EqpState, "Run");
+                            _UIReport.On_Eqp_State_Changed(EqpState, "Run");
                             EqpState = "Run";
                         }
                         break;
@@ -285,7 +286,7 @@ namespace TransferControl.Engine
 
                             tmp[0].Fetchable = true;
                             tmp[0].Used = true;
-                            _EngReport.On_Port_Begin(tmp[0].Name, FormName.ToString());
+                            _UIReport.On_Port_Begin(tmp[0].Name, FormName.ToString());
                             logger.Debug(robot.Name + ":指定 " + tmp[0].Name + " 開始取片");
                             if (tmp[0].ByPass)
                             {
@@ -316,9 +317,9 @@ namespace TransferControl.Engine
                 SpinWait.SpinUntil(() => CheckCycle() || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待搬運週期完成
                 TimeSpan diff = DateTime.Now - StartTime;
                 logger.Info("Process Time: " + diff.TotalSeconds);
-                _EngReport.On_Eqp_State_Changed(EqpState, "Idle");
+                _UIReport.On_Eqp_State_Changed(EqpState, "Idle");
                 EqpState = "Idle";
-                _EngReport.On_Task_Finished(FormName.ToString(), diff.TotalSeconds.ToString(), LapsedWfCount, LapsedLotCount);
+                _UIReport.On_Task_Finished(FormName.ToString(), diff.TotalSeconds.ToString(), LapsedWfCount, LapsedLotCount);
                 logger.Debug("搬運週期完成，下個周期開始");
 
                 LapsedWfCount = 0;
@@ -333,9 +334,14 @@ namespace TransferControl.Engine
         private bool CheckCycle()
         {
 
-            bool a =  (from port in NodeManagement.GetLoadPortList()
+            bool a = (from port in NodeManagement.GetLoadPortList()
                       where port.PortUnloadAndLoadFinished
                       select port).Count() == 2;
+
+            bool a1 = (from port in NodeManagement.GetLoadPortList()
+                      where !port.ByPass
+                      select port).Count() == 0;
+
             //bool a = (from jb in JobManagement.GetJobList()
             //          where jb.Position.IndexOf("LoadPort") != -1 && jb.MapFlag && !jb.ProcessFlag && !
             //          select jb).Count() == 0;
@@ -348,7 +354,7 @@ namespace TransferControl.Engine
 
             
 
-            return a & b & c;
+            return (a||!a1) & b & c;
         }
         /// <summary>
         /// 確認在席
@@ -451,7 +457,7 @@ namespace TransferControl.Engine
                                  select Job).Count() == 0)
                             {
                                 PortNode.Used = false;
-                                _EngReport.On_Port_Finished(PortNode.Name, FormName);
+                                _UIReport.On_Port_Finished(PortNode.Name, FormName);
                                 ProcessRecord.AddDetail(PortNode, "Finish", "COMPLETE", DateTime.Now);
                                 PortNode.PrID = "";
                             }
@@ -1285,7 +1291,7 @@ namespace TransferControl.Engine
                     case Transaction.Command.RobotType.Reset:
                         Node.State = Node.LastState;
                         AlarmManagement.Remove(Node.Name);
-                        _EngReport.On_Node_State_Changed(Node, Node.State);
+                        _UIReport.On_Node_State_Changed(Node, Node.State);
                         break;
                 }
 
@@ -1544,7 +1550,7 @@ namespace TransferControl.Engine
                             break;
 
                     }
-                    _EngReport.On_Command_Excuted(Node, Txn, Msg);
+                    _UIReport.On_Command_Excuted(Node, Txn, Msg);
 
 
                     if (TargetJob.Job_Id.Equals("dummy") && !Txn.ScriptName.Equals(""))
@@ -1553,7 +1559,7 @@ namespace TransferControl.Engine
                         {
                             if (!Txn.CommandType.Equals("CMD") && !Txn.CommandType.Equals("MOV"))
                             {
-                                _EngReport.On_Script_Finished(Node, Txn.ScriptName, Txn.FormName);
+                                _UIReport.On_Script_Finished(Node, Txn.ScriptName, Txn.FormName);
 
                             }
                         }
@@ -1735,7 +1741,7 @@ namespace TransferControl.Engine
                                                 break;
                                         }
 
-                                        _EngReport.On_Job_Location_Changed(Txn.TargetJobs[0]);
+                                        _UIReport.On_Job_Location_Changed(Txn.TargetJobs[0]);
                                     }
                                 }
                             }
@@ -1824,16 +1830,16 @@ namespace TransferControl.Engine
                                 case Transaction.Command.LoadPortType.MappingUnload:
                                 case Transaction.Command.LoadPortType.UnDock:
 
-                                    _EngReport.On_Node_State_Changed(Node, "UnLoad Complete");
+                                    _UIReport.On_Node_State_Changed(Node, "UnLoad Complete");
                                     break;
                                 case Transaction.Command.LoadPortType.InitialPos:
                                 case Transaction.Command.LoadPortType.ForceInitialPos:
-                                    _EngReport.On_Node_State_Changed(Node, "Ready To Load");
+                                    _UIReport.On_Node_State_Changed(Node, "Ready To Load");
                                     break;
                             }
                             break;
                     }
-                    _EngReport.On_Command_Finished(Node, Txn, Msg);
+                    _UIReport.On_Command_Finished(Node, Txn, Msg);
 
 
 
@@ -1846,7 +1852,7 @@ namespace TransferControl.Engine
                         if (Txn.LastOneScript)
                         {
 
-                            _EngReport.On_Script_Finished(Node, Txn.ScriptName, Txn.FormName);
+                            _UIReport.On_Script_Finished(Node, Txn.ScriptName, Txn.FormName);
 
                         }
                         else
@@ -2013,10 +2019,10 @@ namespace TransferControl.Engine
                         case Transaction.Command.LoadPortType.MappingLoad:
 
                             Node.InterLock = false;
-                            _EngReport.On_Node_State_Changed(Node, "Load Complete");
+                            _UIReport.On_Node_State_Changed(Node, "Load Complete");
                             break;
                         case Transaction.Command.LoadPortType.Unload:
-                            _EngReport.On_Node_State_Changed(Node, "UnLoad Complete");
+                            _UIReport.On_Node_State_Changed(Node, "UnLoad Complete");
                             break;
                         default:
                             Node.InterLock = true;
@@ -2070,7 +2076,7 @@ namespace TransferControl.Engine
                                 Txn.TargetJobs[i].Slot = (i + 1).ToString();
                                 Txn.TargetJobs[i].Position = Node.Name;
                                 Node.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
-                                _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
+                                _UIReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
                             }
 
                             break;
@@ -2098,7 +2104,7 @@ namespace TransferControl.Engine
                                 Txn.TargetJobs[i].Position = Txn.Position;
                                 TargetNode6.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
                                 TargetNode6.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
-                                _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
+                                _UIReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
                                 if (Txn.TargetJobs[i].Position.Equals(Txn.TargetJobs[i].Destination))
                                 {
                                     Node from = NodeManagement.Get(Txn.TargetJobs[i].FromPort);
@@ -2147,7 +2153,7 @@ namespace TransferControl.Engine
 
                                 Node.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
 
-                                _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
+                                _UIReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
                                 // logger.Debug(JsonConvert.SerializeObject(Txn.TargetJobs[i]));
                             }
 
@@ -2183,7 +2189,7 @@ namespace TransferControl.Engine
                                 Node TargetNode3 = NodeManagement.Get(Txn.TargetJobs[i].Position);
                                 TargetNode3.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
                                 TargetNode3.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
-                                _EngReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
+                                _UIReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
                                 // logger.Debug(JsonConvert.SerializeObject(Txn.TargetJobs[i]));
                                 if (Txn.TargetJobs[i].Position.Equals(Txn.TargetJobs[i].Destination))
                                 {
@@ -2230,7 +2236,7 @@ namespace TransferControl.Engine
                 Node.LastState = Node.State;
             }
             Node.State = "Alarm";
-            _EngReport.On_Command_TimeOut(Node, Txn);
+            _UIReport.On_Command_TimeOut(Node, Txn);
         }
         /// <summary>
         /// 事件觸發
@@ -2249,12 +2255,12 @@ namespace TransferControl.Engine
                         Node.LastState = Node.State;
                     }
                     Node.State = "Alarm";
-                    _EngReport.On_Command_Error(Node, new Transaction(), Msg);
-                    _EngReport.On_Node_State_Changed(Node, "Alarm");
+                    _UIReport.On_Command_Error(Node, new Transaction(), Msg);
+                    _UIReport.On_Node_State_Changed(Node, "Alarm");
                 }
                 else
                 {
-                    _EngReport.On_Event_Trigger(Node, Msg);
+                    _UIReport.On_Event_Trigger(Node, Msg);
                 }
             }
             catch (Exception e)
@@ -2272,7 +2278,7 @@ namespace TransferControl.Engine
         {
 
             logger.Debug(Device_ID + " " + Status);
-            _EngReport.On_Controller_State_Changed(Device_ID, Status);
+            _UIReport.On_Controller_State_Changed(Device_ID, Status);
         }
 
 
@@ -2290,7 +2296,7 @@ namespace TransferControl.Engine
             StateRecord.NodeStateUpdate(Node.Name, Node.State, Status);
             Node.State = Status;
 
-            _EngReport.On_Node_State_Changed(Node, Status);
+            _UIReport.On_Node_State_Changed(Node, Status);
         }
         /// <summary>
         /// 命令執行發生錯誤
@@ -2305,8 +2311,8 @@ namespace TransferControl.Engine
                 Node.LastState = Node.State;
             }
             Node.State = "Alarm";
-            _EngReport.On_Command_Error(Node, Txn, Msg);
-            _EngReport.On_Node_State_Changed(Node, "Alarm");
+            _UIReport.On_Command_Error(Node, Txn, Msg);
+            _UIReport.On_Node_State_Changed(Node, "Alarm");
         }
 
     }

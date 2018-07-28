@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace TransferControl.Engine
 {
-    public interface IEngineReport
+    public interface IUserInterfaceReport
     {
         void On_Command_Excuted(Node Node, Transaction Txn, ReturnMessage Msg);
         void On_Command_Error(Node Node, Transaction Txn, ReturnMessage Msg);
