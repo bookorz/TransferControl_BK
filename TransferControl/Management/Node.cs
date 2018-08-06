@@ -174,6 +174,10 @@ namespace TransferControl.Management
         //Demo用Condition
         public bool PortUnloadAndLoadFinished { get; set; }
 
+        public bool Busy { get; set; }
+
+        public string LastFinMethod { get; set; }
+
         public class Route
         {
             public string NodeName { get; set; }
@@ -204,7 +208,8 @@ namespace TransferControl.Management
                 State = "Ready To Load";
             }
             LastState = "Idle";
-
+            LastFinMethod = "";
+            Busy = false;
             PutOut = false;
             PutAvailable = true;
             GetAvailable = true;

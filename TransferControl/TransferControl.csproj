@@ -97,5 +97,9 @@
       <Name>SANWA</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Lib\log4net.dll" />
+    <Content Include="Lib\nmodbuspc.dll" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

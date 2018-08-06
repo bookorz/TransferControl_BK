@@ -67,7 +67,6 @@ C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\log4
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\mysql.data.dll
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\Newtonsoft.Json.dll
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\SANWA.dll
-C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\nModbusPC.dll
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\Dapper.dll
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\SANWA.pdb
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\Newtonsoft.Json.xml
