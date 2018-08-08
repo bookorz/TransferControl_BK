@@ -1406,8 +1406,8 @@ namespace TransferControl.Engine
                                     break;
                                 case Transaction.Command.LoadPortType.GetMapping:
                                     //產生Mapping資料
-                                    string Mapping = Msg.Value;
-                                    //string Mapping = "1111000000000000000000000";
+                                    //string Mapping = Msg.Value;
+                                    string Mapping = "1000000000000000000000000";
                                     //WaferAssignUpdate.UpdateLoadPortMapping(Node.Name, Msg.Value);
                                     int currentIdx = 1;
                                     for (int i = 0; i < Mapping.Length; i++)

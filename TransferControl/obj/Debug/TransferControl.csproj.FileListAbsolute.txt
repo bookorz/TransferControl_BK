@@ -76,3 +76,4 @@ C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\obj\Debug\Tran
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\obj\Debug\TransferControl.csproj.CopyComplete
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\obj\Debug\TransferControl.dll
 C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\obj\Debug\TransferControl.pdb
+C:\Users\ethan_huang\source\repos\TransferControl\TransferControl\bin\Debug\nModbusPC.dll
