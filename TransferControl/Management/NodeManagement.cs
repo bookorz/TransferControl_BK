@@ -67,6 +67,23 @@ namespace TransferControl.Management
             }
         }
 
+        public static bool IsRobotInitial()
+        {
+            bool result = false;
+            var findNotInit = from node in NodeList.Values.ToList()
+                              where !node.InitialComplete && node.Type.Equals("ROBOT") && !node.ByPass
+                              select node;
+            if (findNotInit.Count() == 0)
+            {
+                result = true;
+            }
+            else
+            {
+                result = false;
+            }
+            return result;
+        }
+
         public static bool IsNeedInitial()
         {
             bool result = false;
