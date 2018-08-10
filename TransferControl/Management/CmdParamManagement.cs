@@ -1,4 +1,5 @@
-﻿using SANWA.Utility;
+﻿using log4net;
+using SANWA.Utility;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -21,6 +22,7 @@ namespace TransferControl.Management
         }
 
         static Dictionary<string, ParamMapping> MappingList;
+        static ILog logger = LogManager.GetLogger(typeof(CmdParamManagement));
 
         public static void Initialize()
         {
@@ -59,7 +61,8 @@ namespace TransferControl.Management
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.StackTrace);
+                //throw new Exception(ex.StackTrace);
+                logger.Error(ex.StackTrace);
             }
 
         }
