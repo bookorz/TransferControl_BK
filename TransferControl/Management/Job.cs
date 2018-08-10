@@ -15,6 +15,7 @@ namespace TransferControl.Management
         public bool ProcessFlag { get; set; }
         public bool AlignerFlag { get; set; }
         public bool OCRFlag { get; set; }
+        public string DefaultOCR { get; set; }
         public bool AlignerFinished { get; set; }
         public bool OCRFinished { get; set; }
         public string OCRImgPath { get; set; }
@@ -30,6 +31,7 @@ namespace TransferControl.Management
         public string CurrentState { get; set; }
         public string WaitToDo { get; set; }
         public string ProcessNode { get; set; }
+        public string RecipeID { get; set; }
         public bool MapFlag { get; set; }
         public int Offset { get; set; }
         public int Angle { get; set; }
@@ -42,6 +44,7 @@ namespace TransferControl.Management
             Destination = "";
             DestinationSlot = "";
             OCRImgPath = "";
+            RecipeID = "";
             ProcessFlag = false;
             MapFlag = false;
             Angle = 270;

@@ -2,6 +2,7 @@
 using log4net;
 using Newtonsoft.Json;
 using SANWA.Utility;
+using SANWA.Utility.Config;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -25,17 +26,21 @@ namespace TransferControl.Management
         {
             NodeList = new ConcurrentDictionary<string, Node>();
             NodeListByCtrl = new ConcurrentDictionary<string, Node>();
+            Dictionary<string, object> keyValues = new Dictionary<string, object>();
             string Sql = @"SELECT 
 	                        UPPER(t.node_id) AS name, UPPER(t.controller_id) AS controller,
 	                        t.conn_address AS adrno, UPPER(t.node_type) AS TYPE, 
 	                        UPPER(t.vendor) AS brand,t.bypass,t.enable_flg AS ENABLE, 
 	                        UPPER(t.default_aligner) AS defaultaligner, 
-	                        UPPER(t.alternative_aligner) AS alternativealigner,
-	                        t.route_table AS routetable
-                        FROM config_node t";
-            DataTable dt = dBUtil.GetDataTable(Sql, null);
+	                        UPPER(t.alternative_aligner) AS alternativealigner,	                       
+	                        t.wafer_size as WaferSize,
+                            t.Double_Arm as DoubleArmActive
+                        FROM config_node t
+                        WHERE t.equipment_model_id = @equipment_model_id";
+            keyValues.Add("@equipment_model_id", SystemConfig.Get().SystemMode);
+            DataTable dt = dBUtil.GetDataTable(Sql, keyValues);
             string str_json = JsonConvert.SerializeObject(dt, Formatting.Indented);
-            str_json = str_json.Replace("\"[", "[").Replace("]\"", "]").Replace("\\\"", "\"");
+            //str_json = str_json.Replace("\"[", "[").Replace("]\"", "]").Replace("\\\"", "\"");
             List<Node> nodeList = JsonConvert.DeserializeObject<List<Node>>(str_json);
            
             foreach (Node each in nodeList)
@@ -265,89 +270,69 @@ namespace TransferControl.Management
             return result;
         }
 
-        public static Node GetNextRobot(Node ProcessNode, Job Job)
-        {
-            Node result = null;
+        //public static Node GetNextRobot(Node ProcessNode, Job Job)
+        //{
+        //    Node result = null;
 
-            foreach (Node.Route eachRt in ProcessNode.RouteTable)
-            {
-                Node tmp;
-                if (eachRt.NodeType.Equals("ROBOT"))
-                {
-                    if (NodeList.TryGetValue(eachRt.NodeName, out tmp))
-                    {
-                        foreach (Node.Route eachtmpRt in tmp.RouteTable)
-                        {
-                            if (Job.Destination.Equals(eachtmpRt.NodeName))//尋找能搬送到目的地的Robot
-                            {
-                                result = tmp;
-                            }
-                        }
-                    }
-                }
-            }
 
-            return result;
-        }
+        //    var findPoint = from point in PointManagement.GetPointList(ProcessNode.Name)
+        //                    where point.Position.ToUpper().Equals(Job.Destination.ToUpper())
+        //                    select point;
+        //    if (findPoint.Count() != 0)
+        //    {
+        //        result = NodeManagement.Get(findPoint.First().NodeName);
+        //    }
+        //    return result;
+        //}
 
         public static Node GetNextRobot(string Destination)
         {
             Node result = null;
 
-            Node Dest = Get(Destination);
-            if (Dest == null)
+            var findPoint = from point in PointManagement.GetPointList()
+                            where point.Position.ToUpper().Equals(Destination.ToUpper())
+                            select point;
+            if (findPoint.Count() != 0)
             {
-                return null;
-            }
-
-            foreach (Node.Route eachRt in Dest.RouteTable)
-            {
-
-                if (eachRt.NodeType.Equals("ROBOT"))
-                {
-                    if (NodeList.TryGetValue(eachRt.NodeName, out result))
-                    {
-                        break;
-                    }
-                }
+                result = Get(findPoint.First().NodeName);
             }
 
             return result;
         }
 
-        public static Node GetOCRByAligner(Node Aligner)
-        {
-            Node result = null;
+        //public static Node GetOCRByAligner(Node Aligner)
+        //{
+        //    Node result = null;
 
-            foreach (Node.Route eachRt in Aligner.RouteTable)
-            {
-                if (eachRt.NodeType.Equals("OCR"))
-                {
-                    if (NodeList.TryGetValue(eachRt.NodeName, out result))
-                    {
-                        break;
-                    }
-                }
-            }
-            return result;
-        }
+        //    foreach (Node.Route eachRt in Aligner.RouteTable)
+        //    {
+        //        if (eachRt.NodeType.Equals("OCR"))
+        //        {
+        //            if (NodeList.TryGetValue(eachRt.NodeName, out result))
+        //            {
+        //                break;
+        //            }
+        //        }
+        //    }
+        //    return result;
+        //}
 
-        public static Node GetAlignerByOCR(Node OCR)
-        {
-            Node result = null;
+        //public static Node GetAlignerByOCR(Node OCR)
+        //{
+        //    Node result = null;
 
-            foreach (Node.Route eachRt in OCR.RouteTable)
-            {
-                if (eachRt.NodeType.Equals("ALIGNER"))
-                {
-                    if (NodeList.TryGetValue(eachRt.NodeName, out result))
-                    {
-                        break;
-                    }
-                }
-            }
-            return result;
-        }
+        //    foreach (Node.Route eachRt in OCR.RouteTable)
+        //    {
+        //        if (eachRt.NodeType.Equals("ALIGNER"))
+        //        {
+        //            if (NodeList.TryGetValue(eachRt.NodeName, out result))
+        //            {
+        //                break;
+        //            }
+        //        }
+        //    }
+        //    return result;
+        //}
 
         public static bool Add(string Name, Node Node)
         {

@@ -352,7 +352,7 @@ namespace TransferControl.Controller
                                             {
                                                 ReturnMsg.Type = ReturnMessage.ReturnType.Finished;
                                             }
-                                            //SpinWait.SpinUntil(() => false, 300);
+                                            SpinWait.SpinUntil(() => false, 50);
                                             //ThreadPool.QueueUserWorkItem(new WaitCallback(conn.Send), ReturnMsg.FinCommand);
                                             conn.Send(ReturnMsg.FinCommand);
                                             logger.Debug(_Config.DeviceName + "Send:" + ReturnMsg.FinCommand);

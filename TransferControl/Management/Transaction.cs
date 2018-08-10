@@ -15,6 +15,7 @@ namespace TransferControl.Management
         public string Seq { get; set; }
         public string NodeName { get; set; }
         public string NodeType { get; set; }
+        public string RecipeID { get; set; }
         public string Position { get; set; }
         public string Point { get; set; }
         public string Position2 { get; set; }
@@ -116,11 +117,13 @@ namespace TransferControl.Management
                 public const string Continue = "Continue";
                 public const string GetMode = "GetMode";
                 public const string GetSV = "GetSV";
-
+                public const string Mapping = "Mapping";
+                public const string GetMapping = "GetMapping";
             }
             //Aligner
             public class AlignerType
             {
+                public const string SetAlign = "SetAlign";
                 public const string Align = "Align";
                 public const string WaferHold = "WaferHold";
                 public const string WaferRelease = "WaferRelease";
@@ -171,6 +174,7 @@ namespace TransferControl.Management
             ScriptName = "";
             Type = "";
             FormName = "";
+            RecipeID = "";
             TargetJobs = new List<Job>();
 
             timeOutTimer.Enabled = false;

@@ -50,6 +50,8 @@ namespace TransferControl.Engine
             CommandScriptManagement.LoadConfig();
             //初始化命令參數轉換表
             CmdParamManagement.Initialize();
+            //初始化Robot點位表
+            PointManagement.LoadConfig();
         }
         /// <summary>
         /// 對所有Controller連線
@@ -247,11 +249,11 @@ namespace TransferControl.Engine
                     robot.InitialObject();
 
                     List<Node> PortList = new List<Node>();
-                    foreach (Node.Route eachNode in robot.RouteTable)
+                    foreach (RobotPoint eachNode in PointManagement.GetPointList())
                     {
-                        if (eachNode.NodeType.Equals("LOADPORT"))
+                        if (eachNode.PositionType.Equals("LOADPORT"))
                         {
-                            PortList.Add(NodeManagement.Get(eachNode.NodeName));
+                            PortList.Add(NodeManagement.Get(eachNode.Position));
 
                         }
                     }
@@ -347,13 +349,13 @@ namespace TransferControl.Engine
             bool b = (from port in NodeManagement.GetLoadPortList()
                       where port.Used
                       from wafer in port.JobList.Values
-                      where wafer.NeedProcess ==true
+                      where wafer.NeedProcess == true
                       select port).Count() == 0;
             bool c = (from port in NodeManagement.GetLoadPortList()
                       where port.Available == true && port.Fetchable == true
                       select port).Count() == 0;
 
-           
+
 
             return (a || !a1) & b & c;
         }
@@ -404,11 +406,11 @@ namespace TransferControl.Engine
 
                 List<Job> TargetJobs = new List<Job>();
                 List<Node> PortList = new List<Node>();
-                foreach (Node.Route eachNode in RobotNode.RouteTable)
+                foreach (RobotPoint eachNode in PointManagement.GetPointList())
                 {
-                    if (eachNode.NodeType.Equals("LOADPORT"))
+                    if (eachNode.PositionType.Equals("LOADPORT"))
                     {
-                        PortList.Add(NodeManagement.Get(eachNode.NodeName));
+                        PortList.Add(NodeManagement.Get(eachNode.Position));
 
                     }
                 }
@@ -487,7 +489,7 @@ namespace TransferControl.Engine
                                     else
                                     {
                                         int diff = Convert.ToInt16(eachJob.Slot) - FirstSlot;
-                                        if (diff == 1)
+                                        if (diff == 1 && PortNode.DoubleArmActive) //Double arm fetch must only be enabled with DoubleArm is Active.
                                         {
                                             ConsecutiveSlot = true;
                                             // eachJob.ProcessFlag = true;
@@ -576,8 +578,8 @@ namespace TransferControl.Engine
                 JobsSortBySlot.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
                 foreach (Job eachJob in JobsSortBySlot)
                 {
-                    if (!eachJob.Destination.Equals(PortNode.Name))
-                    {
+                    //if (!eachJob.Destination.Equals(PortNode.Name))
+                   // {
                         if (FirstSlot == -1)
                         {
                             FirstSlot = Convert.ToInt16(eachJob.Slot);
@@ -586,7 +588,7 @@ namespace TransferControl.Engine
                             break;//找到
                         }
 
-                    }
+                   // }
                 }
                 if (FirstSlot != -1)
                 {
@@ -710,7 +712,7 @@ namespace TransferControl.Engine
                                 {
                                     continue;
                                 }
-                                    TodoAction(ScriptName, eachAction, TargetJobs, RobotNode, FormName);
+                                TodoAction(ScriptName, eachAction, TargetJobs, RobotNode, FormName);
                             }
                             break;
                         }
@@ -754,7 +756,7 @@ namespace TransferControl.Engine
                     result = NodeManagement.Get(Job.ProcessNode);
                     break;
                 case "OCR":
-                    result = NodeManagement.GetOCRByAligner(Node);
+                    result = NodeManagement.Get(Job.DefaultOCR);
                     break;
                 case "Robot":
                     result = NodeManagement.Get(Job.Position);
@@ -783,7 +785,7 @@ namespace TransferControl.Engine
                         logger.Debug("(GetPosNode) Target not found.");
                         return null;
                     }
-                    result = NodeManagement.GetNextRobot(Target, Job);
+                    result = NodeManagement.GetNextRobot(Job.Destination);
                     if (result == null)
                     {
                         logger.Debug("(GetPosNode) GetNextRobot fail.");
@@ -922,16 +924,16 @@ namespace TransferControl.Engine
                                 {
                                     Node.PutOut = false;
                                 }
-                                    logger.Debug(Node.Name + " 偵測到手臂伸出中，等待收回，需求命令:" + Action.EqpType + ":" + Action.Method);
+                                logger.Debug(Node.Name + " 偵測到手臂伸出中，等待收回，需求命令:" + Action.EqpType + ":" + Action.Method);
 
-                                    SpinWait.SpinUntil(() => !Node.PutOut || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待Robot手臂收回
-                                    if (_Mode.Equals("Stop"))
-                                    {
-                                        logger.Debug("離開自動模式");
-                                        return;
-                                    }
-                                    logger.Debug(Node.Name + " 偵測到手臂收回，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
-                                
+                                SpinWait.SpinUntil(() => !Node.PutOut || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待Robot手臂收回
+                                if (_Mode.Equals("Stop"))
+                                {
+                                    logger.Debug("離開自動模式");
+                                    return;
+                                }
+                                logger.Debug(Node.Name + " 偵測到手臂收回，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
+
                             }
                             if (CheckPresent(Target) && (Action.Method.Equals(Transaction.Command.RobotType.Put) || Action.Method.Equals(Transaction.Command.RobotType.PutWithoutBack)))
                             {
@@ -1015,17 +1017,17 @@ namespace TransferControl.Engine
                             logger.Debug("TargetJob.Job_Id:" + TargetJob.Job_Id);
                             if (Node.PutOut && !Action.Method.Equals(Transaction.Command.RobotType.GetAfterWait) && !Action.Method.Equals(Transaction.Command.RobotType.PutBack) && !Action.Method.Equals(Transaction.Command.RobotType.Get))
                             {
-                                
-                                    logger.Debug(Node.Name + " 偵測到手臂伸出中，等待收回，需求命令:" + Action.EqpType + ":" + Action.Method);
 
-                                    SpinWait.SpinUntil(() => !Node.PutOut || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待Robot手臂收回
-                                    if (_Mode.Equals("Stop"))
-                                    {
-                                        logger.Debug("離開自動模式");
-                                        return;
-                                    }
-                                    logger.Debug(Node.Name + " 偵測到手臂收回，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
-                                
+                                logger.Debug(Node.Name + " 偵測到手臂伸出中，等待收回，需求命令:" + Action.EqpType + ":" + Action.Method);
+
+                                SpinWait.SpinUntil(() => !Node.PutOut || _Mode.Equals("Stop"), SpinWaitTimeOut); //等待Robot手臂收回
+                                if (_Mode.Equals("Stop"))
+                                {
+                                    logger.Debug("離開自動模式");
+                                    return;
+                                }
+                                logger.Debug(Node.Name + " 偵測到手臂收回，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
+
                             }
 
                             lock (Node)
@@ -1086,7 +1088,7 @@ namespace TransferControl.Engine
 
                                 if (txn.Method.Equals(Transaction.Command.RobotType.Get) || txn.Method.Equals(Transaction.Command.RobotType.GetAfterWait)/* || txn.Method.Equals(Transaction.Command.RobotType.WaitBeforeGet)*/)
                                 {//當手臂伸出等待時，下一個動作只能是Option 3，沒伸出時可直接Option 0
-                                    
+
                                     if (Node.PutOut)
                                     {
                                         txn.Method = Transaction.Command.RobotType.GetAfterWait;
@@ -1154,41 +1156,49 @@ namespace TransferControl.Engine
                         }
                         if (Action.Param.ToUpper().Equals("BYSETTING"))
                         {
-                            Node NextRobot = NodeManagement.GetNextRobot(Node, TargetJob);
-                            if (NextRobot != null)
-                            {
+                            Node NextRobot = NodeManagement.GetNextRobot(TargetJob.Destination);
+                            RobotPoint p = PointManagement.GetPoint(NextRobot.Name, TargetJob.Destination, TargetJob.RecipeID);
+                            TargetJob.Offset += p.Offset; //Get UnloadPort offset
+                            TargetJob.Offset += TargetJob.Angle;
+                            txn.Value = TargetJob.Offset.ToString();
 
-                                var findRt = from rt in NextRobot.RouteTable
-                                             where rt.NodeName.Equals(Node.Name)
-                                             select rt;
-                                if (findRt.Count() != 0)
-                                {
-                                    TargetJob.Offset = findRt.First().Offset;//Get aligner offset
 
-                                    findRt = from rt in NextRobot.RouteTable
-                                             where rt.NodeName.Equals(TargetJob.Destination)
-                                             select rt;
-                                    if (findRt.Count() != 0)
-                                    {
-                                        TargetJob.Offset += findRt.First().Offset; //Get UnloadPort offset
-                                        TargetJob.Offset += TargetJob.Angle;
-                                        txn.Value = TargetJob.Offset.ToString();
-                                    }
-                                    else
-                                    {
-                                        logger.Debug("Try to get Unload Port angle offset fail: " + TargetJob.Destination + " not found from " + NextRobot.Name + "'s route table.");
-                                    }
-                                }
-                                else
-                                {
-                                    logger.Debug("Try to get Align angle offset fail: " + Node.Name + " not found from " + NextRobot.Name + "'s route table.");
-                                }
 
-                            }
-                            else
-                            {
-                                logger.Debug("Try to get Align angle offset fail: NextRobot not found.");
-                            }
+
+                            //if (NextRobot != null)
+                            //{
+
+                            //    var findRt = from rt in NextRobot.RouteTable
+                            //                 where rt.NodeName.Equals(Node.Name)
+                            //                 select rt;
+                            //    if (findRt.Count() != 0)
+                            //    {
+                            //        TargetJob.Offset = findRt.First().Offset;//Get aligner offset
+
+                            //        findRt = from rt in NextRobot.RouteTable
+                            //                 where rt.NodeName.Equals(TargetJob.Destination)
+                            //                 select rt;
+                            //        if (findRt.Count() != 0)
+                            //        {
+                            //            TargetJob.Offset += findRt.First().Offset; //Get UnloadPort offset
+                            //            TargetJob.Offset += TargetJob.Angle;
+                            //            txn.Value = TargetJob.Offset.ToString();
+                            //        }
+                            //        else
+                            //        {
+                            //            logger.Debug("Try to get Unload Port angle offset fail: " + TargetJob.Destination + " not found from " + NextRobot.Name + "'s route table.");
+                            //        }
+                            //    }
+                            //    else
+                            //    {
+                            //        logger.Debug("Try to get Align angle offset fail: " + Node.Name + " not found from " + NextRobot.Name + "'s route table.");
+                            //    }
+
+                            //}
+                            //else
+                            //{
+                            //    logger.Debug("Try to get Align angle offset fail: NextRobot not found.");
+                            //}
 
                         }
                         else
@@ -1215,7 +1225,7 @@ namespace TransferControl.Engine
         {
             bool a = Node.Phase.Equals("2") && ((Node.GetAvailable && Node.GetMutex && Node.JobList.Count < 2) || (Node.GetAvailable && !Node.InterLock && (Node.UnLockByJob.Equals(TargetJob.Job_Id) || Node.UnLockByJob.Equals("")) && Node.JobList.Count < 2) || Force || !TargetJob.WaitToDo.Equals(Action.Method)) || _Mode.Equals("Stop");
             bool b = !Node.Busy;
-            return a&b;
+            return a & b;
         }
 
         /// <summary>
@@ -1260,8 +1270,9 @@ namespace TransferControl.Engine
                     Jobs.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
                     //上下手臂DestSlot順序相反問題
                     int SlotDiff = Convert.ToInt16(Jobs[1].DestinationSlot) - Convert.ToInt16(Jobs[0].DestinationSlot);
+                    Node port = NodeManagement.Get(Jobs[0].Destination);
 
-                    if (SlotDiff == 1 && DestSlotDiff == 1)
+                    if (SlotDiff == 1 && DestSlotDiff == 1 && port.DoubleArmActive) //Double arm fetch must only be enabled with DoubleArm is Active.
                     {//雙臂同放
                         Wafer = Jobs[1];
                         Transaction txn = new Transaction();
@@ -1289,6 +1300,22 @@ namespace TransferControl.Engine
                         txn.FormName = FormName;
                         RobotNode.SendCommand(txn);
                     }
+                }
+                else
+                {//單臂輪放
+                    Wafer = RobotNode.JobList.Values.ToList()[0];
+                    TargetJobs.Add(Wafer);
+
+                    Transaction txn = new Transaction();
+                    txn.TargetJobs = TargetJobs;
+                    txn.Position = Wafer.Destination;
+                    txn.Slot = Wafer.DestinationSlot;
+                    txn.Method = Transaction.Command.RobotType.Put;
+                    txn.Arm = Wafer.Slot;
+                    txn.ScriptName = ScriptName;
+                    txn.FormName = FormName;
+                    RobotNode.SendCommand(txn);
+
                 }
 
 
@@ -1325,7 +1352,7 @@ namespace TransferControl.Engine
                 if (Txn.TargetJobs.Count != 0)
                 {
                     TargetJob = Txn.TargetJobs[0];
-                    if (Node.Type.Equals("ROBOT"))
+                    if (Node.Type.Equals("ROBOT") && !Txn.Position.Equals(""))//紀錄Robot最後位置
                     {
                         Node.CurrentPosition = Txn.Position;
                     }//分裝置別
@@ -1390,24 +1417,22 @@ namespace TransferControl.Engine
                                         if (!CheckResult)
                                         {
                                             //檢查到LoadPort狀態不允許Robot存取
-                                            var findRoute = from rt in Node.RouteTable
-                                                            where rt.NodeType.Equals("ROBOT")
-                                                            select rt;
-                                            foreach (Node.Route rt in findRoute)
+
+                                            foreach (Node rbt in NodeManagement.GetEnableRobotList())
                                             {//暫停Robot所有動作
                                                 Transaction StopTxn = new Transaction();
                                                 StopTxn.Method = Transaction.Command.RobotType.Pause;
                                                 StopTxn.FormName = "InterLockTxn";
-                                                logger.Error("LoadPort " + Node.Name + " is not ready, send pause cmd to " + rt.NodeName + ".");
-                                                NodeManagement.Get(rt.NodeName).SendCommand(StopTxn);
+                                                logger.Error("LoadPort " + Node.Name + " is not ready, send pause cmd to " + rbt.Name + ".");
+                                                rbt.SendCommand(StopTxn);
                                             }
                                         }
                                     }
                                     break;
                                 case Transaction.Command.LoadPortType.GetMapping:
                                     //產生Mapping資料
-                                    //string Mapping = Msg.Value;
-                                    string Mapping = "1000000000000000000000000";
+                                    string Mapping = Msg.Value;
+                                    //string Mapping = "0000000000011100000000000";
                                     //WaferAssignUpdate.UpdateLoadPortMapping(Node.Name, Msg.Value);
                                     int currentIdx = 1;
                                     for (int i = 0; i < Mapping.Length; i++)
@@ -1443,6 +1468,7 @@ namespace TransferControl.Engine
 
                                                 break;
                                             case '2':
+                                            case 'E':
                                                 wafer.Job_Id = "Crossed";
                                                 wafer.Host_Job_Id = wafer.Job_Id;
                                                 wafer.MapFlag = true;
@@ -1477,8 +1503,84 @@ namespace TransferControl.Engine
 
                             break;
                         case "ROBOT":
+                            switch (Txn.Method)
+                            {
+                                case Transaction.Command.RobotType.GetMapping:
+                                    //產生Mapping資料
+                                    //string Mapping = Msg.Value;
+                                    string Mapping = "1100000000000000000000001";
+                                    //WaferAssignUpdate.UpdateLoadPortMapping(Node.Name, Msg.Value);
 
-                            if (!_Mode.Equals("Stop"))
+                                    Node Port = NodeManagement.Get(Node.CurrentPosition);
+                                    if (Port != null)
+                                    {
+                                        int currentIdx = 1;
+                                        for (int i = 0; i < Mapping.Length; i++)
+                                        {
+                                            Job wafer = new Job();
+                                            wafer.Slot = (i + 1).ToString();
+                                            wafer.FromPort = Port.Name;
+                                            wafer.FromPortSlot = wafer.Slot;
+                                            wafer.Position = Port.Name;
+                                            wafer.AlignerFlag = false;
+                                            string Slot = (i + 1).ToString("00");
+                                            switch (Mapping[i])
+                                            {
+                                                case '0':
+                                                    wafer.Job_Id = "No wafer";
+                                                    wafer.Host_Job_Id = wafer.Job_Id;
+                                                    //MappingData.Add(wafer);
+                                                    break;
+                                                case '1':
+                                                    while (true)
+                                                    {
+                                                        wafer.Job_Id = "Wafer" + currentIdx.ToString("00");
+                                                        wafer.Host_Job_Id = wafer.Job_Id;
+                                                        wafer.MapFlag = true;
+                                                        if (JobManagement.Add(wafer.Job_Id, wafer))
+                                                        {
+
+                                                            //MappingData.Add(wafer);
+                                                            break;
+                                                        }
+                                                        currentIdx++;
+                                                    }
+
+                                                    break;
+                                                case '2':
+                                                case 'E':
+                                                    wafer.Job_Id = "Crossed";
+                                                    wafer.Host_Job_Id = wafer.Job_Id;
+                                                    wafer.MapFlag = true;
+                                                    //MappingData.Add(wafer);
+                                                    break;
+                                                case '?':
+                                                    wafer.Job_Id = "Undefined";
+                                                    wafer.Host_Job_Id = wafer.Job_Id;
+                                                    wafer.MapFlag = true;
+                                                    //MappingData.Add(wafer);
+                                                    break;
+                                                case 'W':
+                                                    wafer.Job_Id = "Double";
+                                                    wafer.Host_Job_Id = wafer.Job_Id;
+                                                    wafer.MapFlag = true;
+                                                    //MappingData.Add(wafer);
+                                                    break;
+                                            }
+                                            if (!Port.AddJob(wafer.Slot, wafer))
+                                            {
+                                                Job org = Port.GetJob(wafer.Slot);
+                                                JobManagement.Remove(org.Job_Id);
+                                                Port.RemoveJob(wafer.Slot);
+                                                Port.AddJob(wafer.Slot, wafer);
+                                            }
+
+                                        }
+                                        Port.IsMapping = true;
+                                    }
+                                    break;
+                            }
+                            if (!_Mode.Equals("Stop") && Txn.FormName.Equals("Running"))
                             {
                                 switch (Node.Phase)
                                 {
@@ -1512,7 +1614,7 @@ namespace TransferControl.Engine
                         case "ALIGNER":
                         case "OCR":
 
-                            if (!_Mode.Equals("Stop"))
+                            if (!_Mode.Equals("Stop") && Txn.FormName.Equals("Running"))
                             {
                                 //TargetJob = Txn.TargetJobs[0];
                                 foreach (Path eachPath in PathManagement.GetExcutePath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
@@ -1589,28 +1691,36 @@ namespace TransferControl.Engine
                         }
                         else
                         {
-                            foreach (CommandScript cmd in CommandScriptManagement.GetExcuteNext(Txn.ScriptName, Txn.Method))
+                            List<CommandScript> WaitExcute = CommandScriptManagement.GetExcuteNext(Txn.ScriptName, Txn.Method);
+                            if (WaitExcute.Count == 0)
                             {
-                                if (Convert.ToInt16(cmd.Index) - Convert.ToInt16(Txn.ScriptIndex) != 1)
+                                //_UIReport.On_Script_Finished(Node, Txn.ScriptName, Txn.FormName);
+                            }
+                            else
+                            {
+                                foreach (CommandScript cmd in WaitExcute)
                                 {
-                                    continue;
+                                    if (Convert.ToInt16(cmd.Index) - Convert.ToInt16(Txn.ScriptIndex) != 1)
+                                    {
+                                        continue;
+                                    }
+                                    Transaction txn = new Transaction();
+                                    txn.Method = cmd.Method;
+                                    txn.FormName = Txn.FormName;
+                                    txn.Arm = cmd.Arm;
+                                    txn.Position = cmd.Position;
+                                    txn.Slot = cmd.Slot;
+                                    txn.Value = cmd.Value;
+                                    txn.ScriptName = Txn.ScriptName;
+                                    txn.ScriptIndex = cmd.Index;
+                                    txn.TargetJobs = Txn.TargetJobs;
+                                    logger.Debug("Excute Script:" + Txn.ScriptName + " Method:" + txn.Method);
+                                    if (cmd.Flag.Equals("End"))
+                                    {
+                                        txn.LastOneScript = true;
+                                    }
+                                    Node.SendCommand(txn);
                                 }
-                                Transaction txn = new Transaction();
-                                txn.Method = cmd.Method;
-                                txn.FormName = Txn.FormName;
-                                txn.Arm = cmd.Arm;
-                                txn.Position = cmd.Position;
-                                txn.Slot = cmd.Slot;
-                                txn.Value = cmd.Value;
-                                txn.ScriptName = Txn.ScriptName;
-                                txn.ScriptIndex = cmd.Index;
-                                txn.TargetJobs = Txn.TargetJobs;
-                                logger.Debug("Excute Script:" + Txn.ScriptName + " Method:" + txn.Method);
-                                if (cmd.Flag.Equals("End"))
-                                {
-                                    txn.LastOneScript = true;
-                                }
-                                Node.SendCommand(txn);
                             }
                         }
                     }
@@ -1642,7 +1752,7 @@ namespace TransferControl.Engine
                             Node.Busy = false;
                             UpdateJobLocation(Node, Txn);
                             UpdateNodeStatus(Node, Txn);
-                            if (!_Mode.Equals("Stop"))
+                            if (!_Mode.Equals("Stop") && Txn.FormName.Equals("Running"))
                             {
                                 switch (Node.Phase)
                                 {
@@ -1724,7 +1834,7 @@ namespace TransferControl.Engine
                                             RobotPutMode(Node, Txn.ScriptName, Txn.FormName);
 
                                         }
-                                        
+
                                         break;
                                     case "3":
                                         //進入放片階段
@@ -1790,7 +1900,7 @@ namespace TransferControl.Engine
                                     }
                                 }
                             }
-                            if (!_Mode.Equals("Stop"))
+                            if (!_Mode.Equals("Stop") && Txn.FormName.Equals("Running"))
                             {
                                 //TargetJob = Txn.TargetJobs[0];
                                 foreach (Path eachPath in PathManagement.GetFinishPath(Txn.ScriptName, TargetJob.CurrentState, Txn.Method))
@@ -1892,29 +2002,37 @@ namespace TransferControl.Engine
                         }
                         else
                         {
-                            foreach (CommandScript cmd in CommandScriptManagement.GetFinishNext(Txn.ScriptName, Txn.Method))
+                            List<CommandScript> WaitExcute = CommandScriptManagement.GetFinishNext(Txn.ScriptName, Txn.Method);
+                            if (WaitExcute.Count == 0)
                             {
-                                if (Convert.ToInt16(cmd.Index) - Convert.ToInt16(Txn.ScriptIndex) != 1)
+                                //_UIReport.On_Script_Finished(Node, Txn.ScriptName, Txn.FormName);
+                            }
+                            else
+                            {
+                                foreach (CommandScript cmd in WaitExcute)
                                 {
-                                    continue;
-                                }
-                                Transaction txn = new Transaction();
-                                txn.Method = cmd.Method;
-                                txn.FormName = Txn.FormName;
-                                txn.Arm = cmd.Arm;
-                                txn.Position = cmd.Position;
-                                txn.Slot = cmd.Slot;
-                                txn.Value = cmd.Value;
-                                txn.ScriptName = Txn.ScriptName;
+                                    if (Convert.ToInt16(cmd.Index) - Convert.ToInt16(Txn.ScriptIndex) != 1)
+                                    {
+                                        continue;
+                                    }
+                                    Transaction txn = new Transaction();
+                                    txn.Method = cmd.Method;
+                                    txn.FormName = Txn.FormName;
+                                    txn.Arm = cmd.Arm;
+                                    txn.Position = cmd.Position;
+                                    txn.Slot = cmd.Slot;
+                                    txn.Value = cmd.Value;
+                                    txn.ScriptName = Txn.ScriptName;
 
-                                txn.ScriptIndex = cmd.Index;
-                                txn.TargetJobs = Txn.TargetJobs;
-                                if (cmd.Flag.Equals("End"))
-                                {
-                                    txn.LastOneScript = true;
+                                    txn.ScriptIndex = cmd.Index;
+                                    txn.TargetJobs = Txn.TargetJobs;
+                                    if (cmd.Flag.Equals("End"))
+                                    {
+                                        txn.LastOneScript = true;
+                                    }
+                                    logger.Debug("Excute Script:" + Txn.ScriptName + " Method:" + txn.Method);
+                                    Node.SendCommand(txn);
                                 }
-                                logger.Debug("Excute Script:" + Txn.ScriptName + " Method:" + txn.Method);
-                                Node.SendCommand(txn);
                             }
                         }
                     }
@@ -2011,7 +2129,7 @@ namespace TransferControl.Engine
                                 Node.UnLockByJob = "";
                                 Node.PutAvailable = true;
                                 Node.PutOut = false;
-                                
+
 
                             }
 
@@ -2035,6 +2153,7 @@ namespace TransferControl.Engine
 
                             break;
                         case Transaction.Command.AlignerType.Retract:
+                        case Transaction.Command.AlignerType.AlignerHome:
                             Node.Available = true;
                             Node.UnLockByJob = "";
 
@@ -2192,7 +2311,7 @@ namespace TransferControl.Engine
                             break;
                         case Transaction.Command.RobotType.Put:
                         case Transaction.Command.RobotType.PutWithoutBack:
-                    
+
                             //logger.Debug(Txn.TargetJobs.Count.ToString());
 
 
@@ -2246,10 +2365,10 @@ namespace TransferControl.Engine
 
 
                             break;
-                        
 
 
-                            
+
+
                     }
                     break;
 

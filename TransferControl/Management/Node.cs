@@ -167,10 +167,7 @@ namespace TransferControl.Management
         /// 在席列表
         /// </summary>
         public ConcurrentDictionary<string, Job> JobList { get; set; }
-        /// <summary>
-        /// 路徑表
-        /// </summary>
-        public List<Route> RouteTable { get; set; }
+
         //Demo用Condition
         public bool PortUnloadAndLoadFinished { get; set; }
 
@@ -178,13 +175,11 @@ namespace TransferControl.Management
 
         public string LastFinMethod { get; set; }
 
-        public class Route
-        {
-            public string NodeName { get; set; }
-            public string NodeType { get; set; }
-            public string Point { get; set; }
-            public int Offset { get; set; }
-        }
+        public bool WaitForFinish { get; set; }
+
+        public string WaferSize { get; set; }
+
+        public bool DoubleArmActive { get; set; }
 
         public void InitialObject()
         {
@@ -218,8 +213,10 @@ namespace TransferControl.Management
             Reserve = false;
             AllDone = false;
             Available = true;
+           
+            WaitForFinish = false;
+            
             //Enable = true;
-
 
             Used = false;
 
@@ -240,7 +237,7 @@ namespace TransferControl.Management
         /// <param name="ScriptName"></param>
         /// <param name="FormName"></param>
         /// <param name="Force"></param>
-        public void ExcuteScript(string ScriptName, string FormName, bool Force = false)
+        public void ExcuteScript(string ScriptName, string FormName, string RecipeID="", bool Force = false)
         {
             CommandScript StartCmd = CommandScriptManagement.GetStart(ScriptName);
             if (StartCmd != null)
@@ -254,6 +251,7 @@ namespace TransferControl.Management
                 txn.Slot = StartCmd.Slot;
                 txn.Value = StartCmd.Value;
                 txn.ScriptIndex = StartCmd.Index;
+                txn.RecipeID = RecipeID;
                 //List<Job> dummyJob = new List<Job>();
                 //Job dummy = new Job();
                 //dummy.Job_Id = "dummy";
@@ -269,7 +267,7 @@ namespace TransferControl.Management
         /// <param name="ScriptName"></param>
         /// <param name="FormName"></param>
         /// <param name="Force"></param>
-        public void ExcuteScript(string ScriptName, string FormName, Dictionary<string, string> Param)
+        public void ExcuteScript(string ScriptName, string FormName, Dictionary<string, string> Param, string RecipeID = "")
         {
             CommandScriptManagement.ReloadScriptWithParam(ScriptName, Param);
             CommandScript StartCmd = CommandScriptManagement.GetStart(ScriptName);
@@ -284,6 +282,7 @@ namespace TransferControl.Management
                 txn.Slot = StartCmd.Slot;
                 txn.Value = StartCmd.Value;
                 txn.ScriptIndex = StartCmd.Index;
+                txn.RecipeID = RecipeID;
                 //List<Job> dummyJob = new List<Job>();
                 //Job dummy = new Job();
                 //dummy.Job_Id = "dummy";
@@ -309,8 +308,10 @@ namespace TransferControl.Management
             {
                 if (this.ByPass)
                 {
-                    logger.Debug("Command cancel,Cause " + this.Name + " in by pass mode.");
-                    return true;
+                    
+                        logger.Debug("Command cancel,Cause " + this.Name + " in by pass mode.");
+                        return true;
+                    
                 }
 
                 IController Ctrl = ControllerManagement.Get(Controller);
@@ -349,17 +350,39 @@ namespace TransferControl.Management
                         }
                     }
                 }
-
-                var findRoute = from rt in RouteTable
-                                where rt.NodeName.Equals(txn.Position)
-                                select rt;
-                if (findRoute.Count() != 0)
+                
+                if (!txn.Position.Equals(""))
                 {
-                    Route t = findRoute.First();
-                    txn.Point = t.Point;
-                    if (t.NodeType.Equals("LOADPORT"))
+                    if (txn.RecipeID.Equals(""))
                     {
-                        Node port = NodeManagement.Get(t.NodeName);
+                        if (txn.TargetJobs.Count != 0)
+                        {
+                            txn.RecipeID = txn.TargetJobs[0].RecipeID;
+                        }
+                        else if (!NodeManagement.Get(txn.Position).WaferSize.Equals(""))
+                        {
+                            txn.RecipeID = NodeManagement.Get(txn.Position).WaferSize;
+                        }
+                    }
+                    RobotPoint point;
+                    if (txn.Method.Equals(Transaction.Command.RobotType.Mapping))
+                    {
+                        point = PointManagement.GetMapPoint(txn.Position, txn.RecipeID);
+                    }
+                    else
+                    {
+                        point = PointManagement.GetPoint(Name, txn.Position, txn.RecipeID);
+                    }
+                    if (point == null)
+                    {
+                        logger.Error("point " + txn.Position + " not found!");
+                        return false;
+                    }
+
+                    txn.Point = point.Point;
+                    if (point.PositionType.Equals("LOADPORT"))
+                    {
+                        Node port = NodeManagement.Get(point.Position);
                         if (port != null)
                         {
                             if (!port.ByPass)
@@ -506,7 +529,12 @@ namespace TransferControl.Management
                     case "ROBOT":
                         switch (txn.Method)
                         {
-
+                            case Transaction.Command.RobotType.GetMapping:
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Robot.MapList(AdrNo, txn.Seq, txn.Value);
+                                break;
+                            case Transaction.Command.RobotType.Mapping:
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Robot.Mapping(AdrNo, txn.Seq,txn.Point,"1",txn.Slot);
+                                break;
                             case Transaction.Command.RobotType.GetStatus:
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Robot.Status(AdrNo, txn.Seq);
                                 break;
@@ -605,6 +633,9 @@ namespace TransferControl.Management
                     case "ALIGNER":
                         switch (txn.Method)
                         {
+                            case Transaction.Command.AlignerType.SetAlign:
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.SetSize(AdrNo, txn.Seq,txn.Value);
+                                break;
                             case Transaction.Command.AlignerType.GetStatus:
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Status(AdrNo, txn.Seq);
                                 break;
