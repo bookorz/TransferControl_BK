@@ -181,6 +181,14 @@ namespace TransferControl.Management
 
         public bool DoubleArmActive { get; set; }
 
+        public bool HasPresent { get; set; }
+
+        public bool CheckStatus { get; set; }
+
+        public bool IsWaferHold { get; set; }
+
+        public string ErrorMsg { get; set; }
+
         public void InitialObject()
         {
             JobList = new ConcurrentDictionary<string, Job>();
@@ -213,9 +221,13 @@ namespace TransferControl.Management
             Reserve = false;
             AllDone = false;
             Available = true;
-           
+            HasPresent = false;
+            CheckStatus = false;
             WaitForFinish = false;
-            
+            InitialComplete = false;
+            IsWaferHold = false;
+
+            ErrorMsg = "";
             //Enable = true;
 
             Used = false;
@@ -671,6 +683,9 @@ namespace TransferControl.Management
                                 break;
                             case Transaction.Command.AlignerType.Align:
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Align(AdrNo, txn.Seq, txn.Value);
+                                break;
+                            case Transaction.Command.AlignerType.AlignOffset://使用上次Align結果，不用先回Home
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Align(AdrNo, txn.Seq, txn.Value,true);
                                 break;
                             case Transaction.Command.AlignerType.Retract:
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Retract(AdrNo, txn.Seq);

@@ -14,7 +14,7 @@ namespace TransferControl.Comm
     class SocketClient : IConnection
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(SocketClient));
-        Socket SckSPort; // 先行宣告Socket
+        Socket SckSPort = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp); // 先行宣告Socket
 
         string RmIp = "192.168.0.127";  // 其中 xxx.xxx.xxx.xxx 為Server端的IP
 
@@ -34,64 +34,59 @@ namespace TransferControl.Comm
             ConnReport = _ConnReport;
             cfg = _Config;
 
-
+            
         }
 
         // 連線
 
         public void Connect()
         {
-            if (SckSPort != null)
-            {
-                if (SckSPort.Connected)
-                {
-                    SckSPort.Close();
-                }
-            }
-            Thread SckTd = new Thread(ConnectServer);
+            //if (SckSPort != null)
+            //{
+            //    if (SckSPort.Connected)
+            //    {
+            //        SckSPort.Close();
+            //    }
+            //}
+            Thread SckTd = new Thread(SckSReceiveProc);
+            SckTd.IsBackground = true;
+            SckTd.Start();
+
+            SckTd = new Thread(TryConnect);
             SckTd.IsBackground = true;
             SckTd.Start();
         }
 
-        private void ConnectServer()
-
+        private void TryConnect()
         {
-
-            try
-
+            while (true)
             {
-                ConnReport.On_Connection_Connecting("Connecting to " + RmIp + ":" + SPort);
-                SckSPort = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-                SckSPort.Connect(new IPEndPoint(IPAddress.Parse(RmIp), SPort));
-
-                // RmIp和SPort分別為string和int型態, 前者為Server端的IP, 後者為Server端的Port
-
                 if (!SckSPort.Connected)
                 {
-                    ConnReport.On_Connection_Error("Connect to " + RmIp + ":" + SPort + " Fail!");
-                    //logger.Error("Connect to " + RmIp + ":" + SPort + " Fail!");
-                    return;
+                    try
+                    {
+                        logger.Debug("Try connecting to " + cfg.IPAdress + ":" + cfg.Port);
+                        
+                        SckSPort.Connect(new IPEndPoint(IPAddress.Parse(RmIp), SPort));
+                        ThreadPool.QueueUserWorkItem(new WaitCallback(ConnReport.On_Connection_Connected), "Connected");
+                        //ConnReport.On_Connection_Connected("Connected");
+                        return;
+                    }
+                    catch (Exception e)
+                    {
+                        logger.Error(e.StackTrace, e);
+                        try
+                        {
+                            SckSPort.Close();
+                        }
+                        catch
+                        {
+
+                        }
+                    }
                 }
-                else
-                {
-                    //logger.Info("Connected! " + RmIp + ":" + SPort);
-                    ConnReport.On_Connection_Connected("Connected! " + RmIp + ":" + SPort);
-                }
-
-                // 同 Server 端一樣要另外開一個執行緒用來等待接收來自 Server 端傳來的資料, 與Server概念同
-
-                Thread SckSReceiveTd = new Thread(SckSReceiveProc);
-                SckSReceiveTd.IsBackground = true;
-                SckSReceiveTd.Start();
-
+                SpinWait.SpinUntil(() => false, 6000);
             }
-            catch (Exception e)
-            {
-                //logger.Error("(ConnectServer " + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
-                ConnReport.On_Connection_Error("(ConnectServer " + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
-            }
-
         }
 
         string S = "";
@@ -105,76 +100,82 @@ namespace TransferControl.Comm
 
                 byte[] clientData = new byte[RDataLen];
                 string data = "";
-
+                bool isReported = true;
                 while (true)
                 {
                     if (!SckSPort.Connected)
                     {
                         //logger.Error(Desc + " (" + RmIp + ":" + SPort + ") is disconnected.");
-                        ConnReport.On_Connection_Disconnected("(" + RmIp + ":" + SPort + ") is disconnected.");
-                        break;
+                        if (!isReported)
+                        {
+                            ConnReport.On_Connection_Disconnected("(" + RmIp + ":" + SPort + ") is disconnected.");
+                            isReported = true;
+                        }
+                        SpinWait.SpinUntil(() => false, 50);
                     }
-                    // 程式會被 hand 在此, 等待接收來自 Server 端傳來的資料
-
-
-
-                    // 往下就自己寫接收到來自Server端的資料後要做什麼事唄~^^”
-
-                    switch (cfg.Vendor.ToUpper())
+                    else
                     {
-                        case "TDK":
-                            while (true)
-                            {
-                                IntAcceptData = SckSPort.Receive(clientData);
-                                S += Encoding.Default.GetString(clientData, 0, IntAcceptData);
-                                if (S.IndexOf(Convert.ToChar(3)) != -1)
-                                {
-                                    //logger.Debug("s:" + S);
-                                    data = S.Substring(0, S.IndexOf(Convert.ToChar(3)) + 1);
-                                    //logger.Debug("data:" + data);
+                        // 程式會被 hand 在此, 等待接收來自 Server 端傳來的資料
+                        isReported = false;
 
-                                    S = S.Substring(S.IndexOf(Convert.ToChar(3)) + 1);
-                                    //logger.Debug("s:" + S);
-                                    break;
+
+                        // 往下就自己寫接收到來自Server端的資料後要做什麼事唄~^^”
+
+                        switch (cfg.Vendor.ToUpper())
+                        {
+                            case "TDK":
+                                while (true)
+                                {
+                                    IntAcceptData = SckSPort.Receive(clientData);
+                                    S += Encoding.Default.GetString(clientData, 0, IntAcceptData);
+                                    if (S.IndexOf(Convert.ToChar(3)) != -1)
+                                    {
+                                        //logger.Debug("s:" + S);
+                                        data = S.Substring(0, S.IndexOf(Convert.ToChar(3)) + 1);
+                                        //logger.Debug("data:" + data);
+
+                                        S = S.Substring(S.IndexOf(Convert.ToChar(3)) + 1);
+                                        //logger.Debug("s:" + S);
+                                        break;
+                                    }
+
+                                }
+                                break;
+                            case "SANWA":
+                                while (true)
+                                {
+                                    IntAcceptData = SckSPort.Receive(clientData);
+                                    S += Encoding.Default.GetString(clientData, 0, IntAcceptData);
+                                    if (S.IndexOf("\r") != -1)
+                                    {
+                                        //logger.Debug("s:" + S);
+                                        data = S.Substring(0, S.IndexOf("\r"));
+                                        //logger.Debug("data:" + data);
+
+                                        S = S.Substring(S.IndexOf("\r") + 1);
+                                        //logger.Debug("s:" + S);
+                                        break;
+                                    }
                                 }
 
-                            }
-                            break;
-                        case "SANWA":
-                            while (true)
-                            {
+                                break;
+                            default:
                                 IntAcceptData = SckSPort.Receive(clientData);
-                                S += Encoding.Default.GetString(clientData, 0, IntAcceptData);
-                                if (S.IndexOf("\r") != -1)
-                                {
-                                    //logger.Debug("s:" + S);
-                                    data = S.Substring(0, S.IndexOf("\r"));
-                                    //logger.Debug("data:" + data);
+                                S = Encoding.Default.GetString(clientData, 0, IntAcceptData);
+                                data = S;
+                                S = "";
+                                break;
+                        }
 
-                                    S = S.Substring(S.IndexOf("\r") + 1 );
-                                    //logger.Debug("s:" + S);
-                                    break;
-                                }
-                            }
 
-                            break;
-                        default:
-                            IntAcceptData = SckSPort.Receive(clientData);
-                            S = Encoding.Default.GetString(clientData, 0, IntAcceptData);
-                            data = S;
-                            S = "";
-                            break;
-                    }
-
-                    
 
                         ThreadPool.QueueUserWorkItem(new WaitCallback(ConnReport.On_Connection_Message), data);
                         //ConnReport.On_Connection_Message(S);
 
-                    
-                    //Console.WriteLine(S);
-                    //logger.Info("[Rev<--]" + S.Replace("\n", "") + "(From " + Desc + " " + RmIp + ":" + SPort + ")");
 
+                        //Console.WriteLine(S);
+                        //logger.Info("[Rev<--]" + S.Replace("\n", "") + "(From " + Desc + " " + RmIp + ":" + SPort + ")");
+                    }
                 }
 
             }
@@ -182,7 +183,8 @@ namespace TransferControl.Comm
             catch (Exception e)
             {
                 logger.Error("(From " + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
-                ConnReport.On_Connection_Disconnected("SckSReceiveProc (" + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
+                //ConnReport.On_Connection_Disconnected("SckSReceiveProc (" + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
+
             }
         }
 
@@ -207,8 +209,8 @@ namespace TransferControl.Comm
 
             catch (Exception e)
             {
-                //logger.Error("(To " + Desc + " " + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
-                ConnReport.On_Connection_Error("Send (" + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
+                logger.Error("(To " + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
+                //ConnReport.On_Connection_Error("Send (" + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
             }
 
 
@@ -219,13 +221,13 @@ namespace TransferControl.Comm
 
         public void Close()
         {
-            if (SckSPort != null)
-            {
+            //if (SckSPort != null)
+            //{
 
-                SckSPort.Close();
+            //    SckSPort.Close();
 
 
-            }
+            //}
         }
     }
 }

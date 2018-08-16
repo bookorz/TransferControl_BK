@@ -442,7 +442,7 @@ namespace TransferControl.Controller
             }
         }
 
-        public void On_Connection_Connected(string Msg)
+        public void On_Connection_Connected(object Msg)
         {
             this._IsConnected = true;
             this.Status = "Connected";

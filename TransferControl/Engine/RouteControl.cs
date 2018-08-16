@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TransferControl.Parser;
+using SANWA.Utility.Config;
 
 namespace TransferControl.Engine
 {
@@ -25,6 +26,7 @@ namespace TransferControl.Engine
         int LapsedWfCount = 0;
         int LapsedLotCount = 0;
         public string EqpState = "";
+        public int NotchDirect = 270;
 
         public int SpinWaitTimeOut = 99999000;
 
@@ -197,14 +199,14 @@ namespace TransferControl.Engine
                     _Mode = "Start";
                     //把所有殘餘命令清除
                     ControllerManagement.ClearTransactionList();
-                    if (FormName.Equals("Running"))
-                    {
-                        _UIReport.On_Mode_Changed("Running");
-                    }
-                    else
-                    {
+                    //if (FormName.Equals("Running"))
+                    //{
+                    //    _UIReport.On_Mode_Changed("Running");
+                    //}
+                    //else
+                    //{
                         _UIReport.On_Mode_Changed("Start");
-                    }
+                    //}
                 }
             }
             ThreadPool.QueueUserWorkItem(new WaitCallback(StartMonitor), FormName);
@@ -579,16 +581,16 @@ namespace TransferControl.Engine
                 foreach (Job eachJob in JobsSortBySlot)
                 {
                     //if (!eachJob.Destination.Equals(PortNode.Name))
-                   // {
-                        if (FirstSlot == -1)
-                        {
-                            FirstSlot = Convert.ToInt16(eachJob.Slot);
-                            //eachJob.ProcessFlag = true;
-                            TargetJobs.Add(eachJob);
-                            break;//找到
-                        }
+                    // {
+                    if (FirstSlot == -1)
+                    {
+                        FirstSlot = Convert.ToInt16(eachJob.Slot);
+                        //eachJob.ProcessFlag = true;
+                        TargetJobs.Add(eachJob);
+                        break;//找到
+                    }
 
-                   // }
+                    // }
                 }
                 if (FirstSlot != -1)
                 {
@@ -1132,7 +1134,17 @@ namespace TransferControl.Engine
                                 Node.Available = false;
                                 logger.Debug(Node.Name + " 偵測到目標節點就緒，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
                             }
-
+                            else if (Action.Method.Equals(Transaction.Command.AlignerType.Align))
+                            {
+                                logger.Debug(Node.Name + " 檢查WaferHold狀態 " + Action.EqpType + ":" + Action.Method + " IsWaferHold:" + Node.IsWaferHold);
+                                SpinWait.SpinUntil(() => Node.IsWaferHold || Force || _Mode.Equals("Stop"), SpinWaitTimeOut);
+                                if (_Mode.Equals("Stop"))
+                                {
+                                    logger.Debug("離開自動模式");
+                                    return;
+                                }
+                                logger.Debug(Node.Name + " WaferHold狀態就緒，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
+                            }
                             lock (Node)
                             {
                                 if (((Node.UnLockByJob.Equals("") || Node.UnLockByJob.Equals(TargetJob.Job_Id))) || Force)
@@ -1157,9 +1169,13 @@ namespace TransferControl.Engine
                         if (Action.Param.ToUpper().Equals("BYSETTING"))
                         {
                             Node NextRobot = NodeManagement.GetNextRobot(TargetJob.Destination);
-                            RobotPoint p = PointManagement.GetPoint(NextRobot.Name, TargetJob.Destination, TargetJob.RecipeID);
-                            TargetJob.Offset += p.Offset; //Get UnloadPort offset
-                            TargetJob.Offset += TargetJob.Angle;
+                            RobotPoint pt = PointManagement.GetPoint(NextRobot.Name, TargetJob.Destination, TargetJob.RecipeID);
+                            RobotPoint al = PointManagement.GetPoint(NextRobot.Name, Node.Name, TargetJob.RecipeID);
+                            TargetJob.Offset += al.Offset + pt.Offset; //Get UnloadPort & Aligner offset
+                            //TargetJob.Offset += TargetJob.Angle;
+
+                            TargetJob.Offset += NotchDirect;
+                            
                             txn.Value = TargetJob.Offset.ToString();
 
 
@@ -1508,7 +1524,7 @@ namespace TransferControl.Engine
                                 case Transaction.Command.RobotType.GetMapping:
                                     //產生Mapping資料
                                     //string Mapping = Msg.Value;
-                                    string Mapping = "1100000000000000000000001";
+                                    string Mapping = SystemConfig.Get().MappingData;
                                     //WaferAssignUpdate.UpdateLoadPortMapping(Node.Name, Msg.Value);
 
                                     Node Port = NodeManagement.Get(Node.CurrentPosition);
@@ -1715,7 +1731,7 @@ namespace TransferControl.Engine
                                     txn.ScriptIndex = cmd.Index;
                                     txn.TargetJobs = Txn.TargetJobs;
                                     logger.Debug("Excute Script:" + Txn.ScriptName + " Method:" + txn.Method);
-                                    if (cmd.Flag.Equals("End"))
+                                    if (cmd.Flag.Trim(new char[] { '\n','\r',' '}).Equals("End"))
                                     {
                                         txn.LastOneScript = true;
                                     }
@@ -2026,7 +2042,7 @@ namespace TransferControl.Engine
 
                                     txn.ScriptIndex = cmd.Index;
                                     txn.TargetJobs = Txn.TargetJobs;
-                                    if (cmd.Flag.Equals("End"))
+                                    if (cmd.Flag.Trim(new char[] { '\n', '\r', ' ' }).Equals("End"))
                                     {
                                         txn.LastOneScript = true;
                                     }
@@ -2150,7 +2166,10 @@ namespace TransferControl.Engine
                     switch (Txn.Method)
                     {
                         case Transaction.Command.AlignerType.WaferHold:
-
+                            Node.IsWaferHold = true;
+                            break;
+                        case Transaction.Command.AlignerType.WaferRelease:
+                            Node.IsWaferHold = false;
                             break;
                         case Transaction.Command.AlignerType.Retract:
                         case Transaction.Command.AlignerType.AlignerHome:
@@ -2207,60 +2226,69 @@ namespace TransferControl.Engine
                     switch (Txn.Method)
                     {
                         case Transaction.Command.RobotType.DoubleGet:
-                            for (int i = 0; i < Txn.TargetJobs.Count; i++)
+                            //修正雙放時，帳會顛倒問題
+                            List<Job> ArmsJob = Txn.TargetJobs.ToList();
+                            ArmsJob.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
+
+                            for (int i = 0; i < ArmsJob.Count; i++)
                             {
-                                Node TargetNode5 = NodeManagement.Get(Txn.TargetJobs[i].Position);
+                                Node TargetNode5 = NodeManagement.Get(ArmsJob[i].Position);
                                 Job tmp;
-                                TargetNode5.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
+                                TargetNode5.JobList.TryRemove(ArmsJob[i].Slot, out tmp);
                                 //LoadPort 空的Slot要塞假資料
                                 if (TargetNode5.Type.Equals("LOADPORT"))
                                 {
                                     tmp = new Job();
                                     tmp.Job_Id = "No wafer";
                                     tmp.Host_Job_Id = "No wafer";
-                                    tmp.Slot = Txn.TargetJobs[i].Slot;
-                                    TargetNode5.JobList.TryAdd(Txn.TargetJobs[i].Slot, tmp);
-                                    ProcessRecord.UpdateSubstrateStart(TargetNode5.PrID, Txn.TargetJobs[i]);
+                                    tmp.Slot = ArmsJob[i].Slot;
+                                    TargetNode5.JobList.TryAdd(ArmsJob[i].Slot, tmp);
+                                    ProcessRecord.UpdateSubstrateStart(TargetNode5.PrID, ArmsJob[i]);
                                 }
-                                Txn.TargetJobs[i].LastNode = Txn.TargetJobs[i].Position;
-                                Txn.TargetJobs[i].LastSlot = Txn.TargetJobs[i].Slot;
-                                Txn.TargetJobs[i].Slot = (i + 1).ToString();
-                                Txn.TargetJobs[i].Position = Node.Name;
-                                Node.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
-                                _UIReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
+                                ArmsJob[i].LastNode = ArmsJob[i].Position;
+                                ArmsJob[i].LastSlot = ArmsJob[i].Slot;
+                                ArmsJob[i].Slot = (i + 1).ToString();
+                                ArmsJob[i].Position = Node.Name;
+                                Node.JobList.TryAdd(ArmsJob[i].Slot, ArmsJob[i]);
+                                _UIReport.On_Job_Location_Changed(ArmsJob[i]);
                             }
 
                             break;
                         case Transaction.Command.RobotType.DoublePut:
-                            for (int i = 0; i < Txn.TargetJobs.Count; i++)
+                            //修正雙放時，帳會顛倒問題
+                            ArmsJob = Txn.TargetJobs.ToList();
+                            ArmsJob.Sort((x, y) => { return Convert.ToInt16(x.Slot).CompareTo(Convert.ToInt16(y.Slot)); });
+                            bool first = true;
+                            foreach (Job j in ArmsJob)
                             {
                                 Node TargetNode6 = NodeManagement.Get(Txn.Position);
                                 Job tmp;
-                                Node.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
-                                Txn.TargetJobs[i].LastNode = Txn.TargetJobs[i].Position;
-                                Txn.TargetJobs[i].LastSlot = Txn.TargetJobs[i].Slot;
-                                switch (i)
+                                //從Robot刪除
+                                Node.JobList.TryRemove(j.Slot, out tmp);
+                                j.LastNode = j.Position;
+                                j.LastSlot = j.Slot;
+
+                                if (first)//修正雙放時，帳會顛倒問題
                                 {
-                                    case 0:
-                                        Txn.TargetJobs[i].Slot = (Convert.ToInt16(Txn.Slot) - 1).ToString();
-
-                                        break;
-                                    case 1:
-                                        Txn.TargetJobs[i].Slot = Txn.Slot;
-
-                                        break;
+                                    j.Slot = Txn.Slot; //上手臂放第二個Slot,因為PortSlot是顛倒的
+                                    first = false;
                                 }
-
-
-                                Txn.TargetJobs[i].Position = Txn.Position;
-                                TargetNode6.JobList.TryRemove(Txn.TargetJobs[i].Slot, out tmp);
-                                TargetNode6.JobList.TryAdd(Txn.TargetJobs[i].Slot, Txn.TargetJobs[i]);
-                                _UIReport.On_Job_Location_Changed(Txn.TargetJobs[i]);
-                                if (Txn.TargetJobs[i].Position.Equals(Txn.TargetJobs[i].Destination))
+                                else
                                 {
-                                    Node from = NodeManagement.Get(Txn.TargetJobs[i].FromPort);
-                                    ProcessRecord.updateSubstrateStatus(from.PrID, Txn.TargetJobs[i], "COMPLETE");
-                                    ProcessRecord.UpdateSubstrateEnd(from.PrID, Txn.TargetJobs[i]);
+                                    j.Slot = (Convert.ToInt16(Txn.Slot) - 1).ToString();
+                                }
+                                //加入到目的地
+                                TargetNode6.JobList.TryRemove(j.Slot, out tmp);
+                                TargetNode6.JobList.TryAdd(j.Slot, j);
+
+                                j.Position = Txn.Position;
+
+                                _UIReport.On_Job_Location_Changed(j);
+                                if (j.Position.Equals(j.Destination))
+                                {
+                                    Node from = NodeManagement.Get(j.FromPort);
+                                    ProcessRecord.updateSubstrateStatus(from.PrID, j, "COMPLETE");
+                                    ProcessRecord.UpdateSubstrateEnd(from.PrID, j);
                                 }
                             }
                             //if (IsTaskFinish())

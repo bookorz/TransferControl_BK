@@ -125,6 +125,7 @@ namespace TransferControl.Management
             {
                 public const string SetAlign = "SetAlign";
                 public const string Align = "Align";
+                public const string AlignOffset = "AlignOffset";
                 public const string WaferHold = "WaferHold";
                 public const string WaferRelease = "WaferRelease";
                 public const string Retract = "Retract";
