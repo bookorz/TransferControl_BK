@@ -23,7 +23,7 @@ namespace TransferControl.Management
         private static DBUtil dBUtil = new DBUtil();
 
         public static void LoadConfig()
-        {
+        { 
             NodeList = new ConcurrentDictionary<string, Node>();
             NodeListByCtrl = new ConcurrentDictionary<string, Node>();
             Dictionary<string, object> keyValues = new Dictionary<string, object>();

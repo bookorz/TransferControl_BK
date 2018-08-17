@@ -8,8 +8,7 @@ namespace TransferControl.Comm
 {
     interface IConnection
     {
-        void Connect();
-        void Send(object Message);
-        void Close();
+        bool Send(object Message);
+        void Start();
     }
 }

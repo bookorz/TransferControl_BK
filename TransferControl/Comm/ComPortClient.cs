@@ -59,14 +59,17 @@ namespace TransferControl.Comm
             }
 
             port = new SerialPort(_Config.PortName, _Config.BaudRate, p, _Config.DataBits, s);
+            
         }
+
+
         public void Close()
         {
             port.Close();
             ConnReport.On_Connection_Disconnected("Close");
         }
 
-        public void Connect()
+        public void Start()
         {
 
             Thread ComTd = new Thread(ConnectServer);
@@ -74,17 +77,19 @@ namespace TransferControl.Comm
             ComTd.Start();
         }
 
-        public void Send(object Message)
+        public bool Send(object Message)
         {
             try
             {
 
                 port.Write(Message.ToString());
+                return true;
             }
             catch (Exception e)
             {
                 //logger.Error("(ConnectServer " + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
                 ConnReport.On_Connection_Error("(ConnectServer )" + e.Message + "\n" + e.StackTrace);
+                return false;
             }
         }
 
@@ -158,6 +163,11 @@ namespace TransferControl.Comm
                 //logger.Error("(ConnectServer " + RmIp + ":" + SPort + ")" + e.Message + "\n" + e.StackTrace);
                 ConnReport.On_Connection_Error("(Sanwa_DataReceived )" + e1.Message + "\n" + e1.StackTrace);
             }
+        }
+
+        public void Dispose()
+        {
+            
         }
     }
 }

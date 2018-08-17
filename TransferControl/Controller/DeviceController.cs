@@ -67,26 +67,40 @@ namespace TransferControl.Controller
             TransactionList.Clear();
         }
 
-        public void Close()
+        //public void Close()
+        //{
+        //    try
+        //    {
+        //        conn.Close();
+        //    }
+        //    catch (Exception e)
+        //    {
+
+        //        logger.Error(_Config.DeviceName + "(DisconnectServer " + _Config.IPAdress + ":" + _Config.Port.ToString() + ")" + e.Message + "\n" + e.StackTrace);
+
+        //    }
+        //}
+
+        //public void Connect()
+        //{
+        //    try
+        //    {
+        //        Close();
+        //        conn.Connect();
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        logger.Error(_Config.DeviceName + "(ConnectToServer " + _Config.IPAdress + ":" + _Config.Port.ToString() + ")" + e.Message + "\n" + e.StackTrace);
+        //    }
+
+        //}
+
+        public void Start()
         {
             try
             {
-                conn.Close();
-            }
-            catch (Exception e)
-            {
-
-                logger.Error(_Config.DeviceName + "(DisconnectServer " + _Config.IPAdress + ":" + _Config.Port.ToString() + ")" + e.Message + "\n" + e.StackTrace);
-
-            }
-        }
-
-        public void Connect()
-        {
-            try
-            {
-                Close();
-                conn.Connect();
+               
+                conn.Start();
             }
             catch (Exception e)
             {
@@ -101,6 +115,7 @@ namespace TransferControl.Controller
             WaitingForSync = true;
             ReturnTypeForSync = Type;
             conn.Send(Cmd);
+            
             SpinWait.SpinUntil(() => !WaitingForSync, Timeout);
             if (WaitingForSync)
             {

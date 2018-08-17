@@ -22,13 +22,13 @@ namespace TransferControl.Management
 
         public static void LoadConfig(ICommandReport Report)
         {
-            if (Controllers != null)
-            {
-                foreach(DeviceController each in Controllers.Values)
-                {
-                    each.Close();
-                }
-            }
+            //if (Controllers != null)
+            //{
+            //    foreach(DeviceController each in Controllers.Values)
+            //    {
+            //        each.Close();
+            //    }
+            //}
             Dictionary<string, object> keyValues = new Dictionary<string, object>();
             Controllers = new ConcurrentDictionary<string, DeviceController>();
             string Sql = @"SELECT UPPER(t.device_name) as DeviceName,t.device_type as DeviceType,
@@ -86,22 +86,32 @@ namespace TransferControl.Management
 
         public static void ConnectAll()
         {
-            foreach (DeviceController each in Controllers.Values.ToList())
+            foreach (IController each in Controllers.Values.ToList())
             {
-                if (!each._Config.Vendor.Equals("HST")&& !each._Config.Vendor.Equals("COGNEX"))
-                {
-                    each.Connect();
-                }
+               
+                    each.Start();
+                
             }
         }
 
-        public static void DisonnectAll()
-        {
-            foreach (DeviceController each in Controllers.Values.ToList())
-            {
-                each.Close();
-            }
-        }
+        //public static void ConnectAll()
+        //{
+        //    foreach (DeviceController each in Controllers.Values.ToList())
+        //    {
+        //        if (!each._Config.Vendor.Equals("HST")&& !each._Config.Vendor.Equals("COGNEX"))
+        //        {
+        //            each.Connect();
+        //        }
+        //    }
+        //}
+
+        //public static void DisonnectAll()
+        //{
+        //    foreach (DeviceController each in Controllers.Values.ToList())
+        //    {
+        //        each.Close();
+        //    }
+        //}
 
         public static bool CheckAllConnection()
         {

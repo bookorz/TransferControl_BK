@@ -9,8 +9,9 @@ namespace TransferControl.Controller
 {
     public interface IController
     {
-        void Connect();
-        void Close();
+        //void Connect();
+        //void Close();
+        void Start();
         bool DoWork(Transaction Txn);
         string GetNextSeq();
         SANWA.Utility.Encoder GetEncoder();

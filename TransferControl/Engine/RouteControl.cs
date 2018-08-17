@@ -65,10 +65,10 @@ namespace TransferControl.Engine
         /// <summary>
         /// 對所有Controller斷線
         /// </summary>
-        public void DisconnectAll()
-        {
-            ControllerManagement.DisonnectAll();
-        }
+        //public void DisconnectAll()
+        //{
+        //    ControllerManagement.DisonnectAll();
+        //}
         /// <summary>
         /// 整機暫停後啟動
         /// </summary>
@@ -1134,7 +1134,7 @@ namespace TransferControl.Engine
                                 Node.Available = false;
                                 logger.Debug(Node.Name + " 偵測到目標節點就緒，離開等待，需求命令:" + Action.EqpType + ":" + Action.Method);
                             }
-                            else if (Action.Method.Equals(Transaction.Command.AlignerType.Align))
+                            else if (Action.Method.Equals(Transaction.Command.AlignerType.Align) || Action.Method.Equals(Transaction.Command.AlignerType.AlignOption))
                             {
                                 logger.Debug(Node.Name + " 檢查WaferHold狀態 " + Action.EqpType + ":" + Action.Method + " IsWaferHold:" + Node.IsWaferHold);
                                 SpinWait.SpinUntil(() => Node.IsWaferHold || Force || _Mode.Equals("Stop"), SpinWaitTimeOut);
@@ -1908,7 +1908,7 @@ namespace TransferControl.Engine
                             }
                             else if (Node.Type.ToUpper().Equals("ALIGNER"))
                             {
-                                if (Txn.Method.Equals(Transaction.Command.AlignerType.Align))
+                                if (Txn.Method.Equals(Transaction.Command.AlignerType.Align) || Txn.Method.Equals(Transaction.Command.AlignerType.AlignOption))
                                 {
                                     if (Txn.TargetJobs.Count != 0)
                                     {

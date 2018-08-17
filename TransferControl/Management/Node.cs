@@ -684,8 +684,11 @@ namespace TransferControl.Management
                             case Transaction.Command.AlignerType.Align:
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Align(AdrNo, txn.Seq, txn.Value);
                                 break;
+                            case Transaction.Command.AlignerType.AlignOption:
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Align(AdrNo, txn.Seq, txn.Value, "1", "0", "0");
+                                break;
                             case Transaction.Command.AlignerType.AlignOffset://使用上次Align結果，不用先回Home
-                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Align(AdrNo, txn.Seq, txn.Value,true);
+                                txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Align(AdrNo, txn.Seq, txn.Value, "0", "0", "0");
                                 break;
                             case Transaction.Command.AlignerType.Retract:
                                 txn.CommandEncodeStr = Ctrl.GetEncoder().Aligner.Retract(AdrNo, txn.Seq);
