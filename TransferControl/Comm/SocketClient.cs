@@ -416,10 +416,10 @@ namespace TransferControl.Comm
 
                     break;
                 default:
-                    S += Encoding.Default.GetString(OrgData, 0, OrgData.Length);
-                    data = S;
+                    data = Encoding.Default.GetString(OrgData, 0, OrgData.Length);
+                   
                     ThreadPool.QueueUserWorkItem(new WaitCallback(ConnReport.On_Connection_Message), data);
-                    S = "";
+                   
                     break;
             }
 
