@@ -189,6 +189,10 @@ namespace TransferControl.Management
 
         public string ErrorMsg { get; set; }
 
+        public string DesignatesAngle { get; set; }
+
+        public int NotchAngle { get; set; }
+
         public void InitialObject()
         {
             JobList = new ConcurrentDictionary<string, Job>();
@@ -226,6 +230,7 @@ namespace TransferControl.Management
             WaitForFinish = false;
             InitialComplete = false;
             IsWaferHold = false;
+            DesignatesAngle = "";
 
             ErrorMsg = "";
             //Enable = true;

@@ -82,11 +82,11 @@ namespace TransferControl.Management
             return result;
         }
 
-        public static RobotPoint GetPoint(string NodeName, string Position, string RecipeID)
+        public static RobotPoint GetPoint(string NodeName, string Position, string WaferSize)
         {
             RobotPoint result = null;
             List<RobotPoint> tmp;           
-            if (PointList.TryGetValue(RecipeID, out tmp))
+            if (PointList.TryGetValue(WaferSize, out tmp))
             {
                 var findPoint = from point in tmp
                                 where point.NodeName.ToUpper().Equals(NodeName.ToUpper()) && point.Position.ToUpper().Equals(Position.ToUpper())
